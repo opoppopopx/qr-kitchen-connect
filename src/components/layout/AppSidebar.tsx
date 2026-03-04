@@ -1,0 +1,54 @@
+import {
+  LayoutDashboard, ClipboardList, UtensilsCrossed, ChefHat, BookOpen, Users, UserCog
+} from "lucide-react";
+import { NavLink } from "@/components/NavLink";
+import {
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
+} from "@/components/ui/sidebar";
+
+const adminItems = [
+  { title: "แดชบอร์ด", url: "/", icon: LayoutDashboard },
+  { title: "ออร์เดอร์", url: "/orders", icon: ClipboardList },
+  { title: "โต๊ะอาหาร", url: "/tables", icon: UtensilsCrossed },
+  { title: "ห้องครัว", url: "/kitchen", icon: ChefHat },
+  { title: "เมนูอาหาร", url: "/menu", icon: BookOpen },
+  { title: "ลูกค้า", url: "/customer", icon: Users },
+  { title: "จัดการพนักงาน", url: "/staff", icon: UserCog },
+];
+
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>
+            {!collapsed && "เมนูหลัก"}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end={item.url === "/"}
+                      className="hover:bg-sidebar-accent/50"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
