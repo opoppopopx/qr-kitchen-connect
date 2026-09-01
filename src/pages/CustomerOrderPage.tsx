@@ -21,6 +21,7 @@ export default function CustomerOrderPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [payDismissed, setPayDismissed] = useState(false);
   const [qrPay, setQrPay] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const table = tables.find(t => t.id === tableId);
   const myOrders = useMemo(
@@ -60,6 +61,8 @@ export default function CustomerOrderPage() {
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   const submitOrder = async () => {
+  const submitOrder = async () => {
+    if (submitting) return;
     if (!table) return;
     if (table.status !== 'occupied') {
       toast.error("โต๊ะนี้ยังไม่ได้เปิด กรุณาแจ้งพนักงาน");
@@ -69,14 +72,20 @@ export default function CustomerOrderPage() {
       toast.error("กรุณาเลือกรายการอาหาร");
       return;
     }
-    const id = await createOrder(table.id, cart, 'customer');
-    if (!id) {
-      toast.error("สั่งอาหารไม่สำเร็จ กรุณาแจ้งพนักงาน");
-      return;
+    setSubmitting(true);
+    try {
+      const id = await createOrder(table.id, cart, 'customer');
+      if (!id) {
+        toast.error("สั่งอาหารไม่สำเร็จ กรุณาแจ้งพนักงาน");
+        return;
+      }
+      setCart([]);
+      toast.success("ส่งออร์เดอร์ไปที่ครัวแล้ว 🎉");
+    } finally {
+      setSubmitting(false);
     }
-    setCart([]);
-    toast.success("ส่งออร์เดอร์ไปที่ครัวแล้ว 🎉");
   };
+
 
   const pay = async (method: 'cash' | 'qr_code', targets = myOrders) => {
     const pending = targets.filter(o => o.status !== 'cancelled' && !payments.some(p => p.order_id === o.id));
