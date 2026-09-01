@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
-import { Minus, Plus, Trash2, Printer, PlusCircle } from "lucide-react";
+import { Minus, Plus, Trash2, Printer, PlusCircle, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MenuPicker } from "@/components/MenuPicker";
 import { orderStatusLabels, type CartItem, type Order } from "@/types/restaurant";
+
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
