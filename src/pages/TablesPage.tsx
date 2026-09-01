@@ -48,7 +48,7 @@ export default function TablesPage() {
     setOrderTable(null);
   };
 
-  const qrUrl = qrTable ? `${window.location.origin}/t/${qrTable.id}` : "";
+  const qrUrl = qrTable ? tableOrderUrl(qrTable.id) : "";
 
   return (
     <div className="space-y-6">
