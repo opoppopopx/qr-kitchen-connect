@@ -48,6 +48,21 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="border-t">
+        {!collapsed && profile && (
+          <p className="px-2 pt-1 text-xs text-muted-foreground truncate">
+            {profile.full_name || profile.username}
+          </p>
+        )}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleSignOut} className="text-destructive hover:bg-destructive/10">
+              <LogOut className="mr-2 h-4 w-4" />
+              {!collapsed && <span>ออกจากระบบ</span>}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
