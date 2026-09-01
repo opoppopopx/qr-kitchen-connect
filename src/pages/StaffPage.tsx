@@ -85,12 +85,18 @@ export default function StaffPage() {
     await load();
   };
 
-  const resetPassword = async (s: StaffMember) => {
-    const password = window.prompt(`ตั้งรหัสผ่านใหม่สำหรับ ${s.username}`);
-    if (!password) return;
-    const { error } = await callStaffFn({ action: "set_password", user_id: s.id, password });
-    if (error) toast.error(error); else toast.success("เปลี่ยนรหัสผ่านแล้ว");
+  const resetPassword = async () => {
+    if (!pwTarget) return;
+    if (pwValue.length < 6) { toast.error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"); return; }
+    if (pwValue !== pwValue2) { toast.error("รหัสผ่านยืนยันไม่ตรงกัน"); return; }
+    setBusy(true);
+    const { error } = await callStaffFn({ action: "set_password", user_id: pwTarget.id, password: pwValue });
+    setBusy(false);
+    if (error) { toast.error(error); return; }
+    toast.success(`เปลี่ยนรหัสผ่านของ @${pwTarget.username} แล้ว`);
+    setPwTarget(null); setPwValue(""); setPwValue2("");
   };
+
 
   const removeStaff = async (s: StaffMember) => {
     if (!window.confirm(`ลบพนักงาน ${s.full_name || s.username}?`)) return;
@@ -197,9 +203,12 @@ export default function StaffPage() {
                 <Button size="sm" variant={s.active ? "outline" : "default"} className="flex-1" onClick={() => toggleActive(s)}>
                   {s.active ? "ปิดการใช้งาน" : "เปิดการใช้งาน"}
                 </Button>
-                <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => resetPassword(s)}>
-                  <KeyRound className="h-4 w-4" />
-                </Button>
+                {isAdmin && (
+                  <Button size="icon" variant="outline" className="h-9 w-9" title="เปลี่ยนรหัสผ่าน"
+                    onClick={() => { setPwTarget(s); setPwValue(""); setPwValue2(""); }}>
+                    <KeyRound className="h-4 w-4" />
+                  </Button>
+                )}
                 {s.id !== user?.id && (
                   <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive" onClick={() => removeStaff(s)}>
                     <Trash2 className="h-4 w-4" />
