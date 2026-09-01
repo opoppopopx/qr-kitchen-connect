@@ -17,6 +17,8 @@ import LoginPage from "./pages/LoginPage";
 import CustomerOrderPage from "./pages/CustomerOrderPage";
 import QRCodesPage from "./pages/QRCodesPage";
 import KitchenDisplayPage from "./pages/KitchenDisplayPage";
+import BookingPage from "./pages/BookingPage";
+import ReservationsPage from "./pages/ReservationsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,10 +37,13 @@ const App = () => (
               <Route path="/t/:tableId" element={<CustomerOrderPage />} />
               {/* Standalone kitchen display (separate from the admin web app) */}
               <Route path="/kd" element={<KitchenDisplayPage />} />
+              {/* Public reservation page (deposit required) */}
+              <Route path="/book" element={<BookingPage />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
               <Route path="/tables" element={<ProtectedRoute><TablesPage /></ProtectedRoute>} />
               <Route path="/qr" element={<ProtectedRoute><QRCodesPage /></ProtectedRoute>} />
+              <Route path="/reservations" element={<ProtectedRoute><ReservationsPage /></ProtectedRoute>} />
 
               <Route path="/kitchen" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
               <Route path="/menu" element={<ProtectedRoute><MenuManagementPage /></ProtectedRoute>} />
