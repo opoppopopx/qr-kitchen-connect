@@ -10,7 +10,8 @@ export interface NavItem {
   roles: AppRole[];
 }
 
-const ALL: AppRole[] = ['admin', 'manager', 'cashier', 'kitchen', 'waiter'];
+
+
 
 export const navItems: NavItem[] = [
   { title: "แดชบอร์ด", url: "/", icon: LayoutDashboard, roles: ['admin', 'manager', 'cashier'] },

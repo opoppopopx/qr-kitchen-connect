@@ -33,6 +33,8 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               {/* Public QR page for customers, one URL per table */}
               <Route path="/t/:tableId" element={<CustomerOrderPage />} />
+              {/* Standalone kitchen display (separate from the admin web app) */}
+              <Route path="/kd" element={<KitchenDisplayPage />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
               <Route path="/tables" element={<ProtectedRoute><TablesPage /></ProtectedRoute>} />
