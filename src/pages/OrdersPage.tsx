@@ -189,10 +189,14 @@ export default function OrdersPage() {
                       )}
                       {!paid && (
                         <>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'cash')}>ชำระเงินสด</Button>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'qr_code')}>ชำระ QR Code</Button>
+                          <Button size="sm" variant="secondary" onClick={() => setQrOrder(order)}>
+                            <QrCode className="h-4 w-4 mr-1" /> ออก QR ให้สแกน
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'cash')}>ยืนยันชำระเงินสด</Button>
+                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'qr_code')}>ยืนยันชำระ QR</Button>
                         </>
                       )}
+
                       <Button size="sm" variant="ghost" onClick={() => printReceipt(order)}>
                         <Printer className="h-4 w-4 mr-1" /> ใบเสร็จ
                       </Button>
