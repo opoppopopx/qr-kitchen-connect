@@ -1,6 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
+const MIN_BACKEND_PASSWORD_LENGTH = 6;
+function normalizePassword(password: string): string {
+  if (password.length >= MIN_BACKEND_PASSWORD_LENGTH) return password;
+  return password.padEnd(MIN_BACKEND_PASSWORD_LENGTH, "·");
+}
+
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -56,14 +63,14 @@ Deno.serve(async (req) => {
 
     if (action === "create") {
       const username = String(body.username ?? "").trim().toLowerCase();
-      const password = String(body.password ?? "");
+      const password = normalizePassword(String(body.password ?? ""));
       const role = String(body.role ?? "");
       const full_name = String(body.full_name ?? "").trim();
       const phone = String(body.phone ?? "").trim();
       const salary = Number(body.salary ?? 0);
 
       if (!/^[a-z0-9._-]{3,32}$/.test(username)) return json({ error: "ชื่อผู้ใช้ไม่ถูกต้อง (a-z, 0-9, 3-32 ตัว)" }, 400);
-      if (password.length < 1) return json({ error: "กรุณากรอกรหัสผ่าน" }, 400);
+      if (String(body.password ?? "").length < 1) return json({ error: "กรุณากรอกรหัสผ่าน" }, 400);
       if (!ROLES.includes(role)) return json({ error: "ตำแหน่งไม่ถูกต้อง" }, 400);
       if (!Number.isFinite(salary) || salary < 0) return json({ error: "เงินเดือนไม่ถูกต้อง" }, 400);
 
@@ -98,8 +105,8 @@ Deno.serve(async (req) => {
 
     if (action === "set_password") {
       const userId = String(body.user_id ?? "");
-      const password = String(body.password ?? "");
-      if (!userId || password.length < 1) return json({ error: "กรุณากรอกรหัสผ่าน" }, 400);
+      const password = normalizePassword(String(body.password ?? ""));
+      if (!userId || String(body.password ?? "").length < 1) return json({ error: "กรุณากรอกรหัสผ่าน" }, 400);
       const { error } = await admin.auth.admin.updateUserById(userId, { password });
       if (error) return json({ error: error.message }, 400);
       return json({ ok: true });

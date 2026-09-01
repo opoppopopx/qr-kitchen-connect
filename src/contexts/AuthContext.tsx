@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import { AppRole } from "@/types/restaurant";
+import { normalizePassword } from "@/lib/password";
 
 export const usernameToEmail = (username: string) =>
   `${username.trim().toLowerCase()}@qrpos.local`;
@@ -76,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (username: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email: usernameToEmail(username),
-      password,
+      password: normalizePassword(password),
     });
     if (error) return { error: "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง" };
     return { error: null };
