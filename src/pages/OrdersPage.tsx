@@ -102,7 +102,13 @@ export default function OrdersPage() {
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {paid && <Badge className="bg-green-100 text-green-800">ชำระแล้ว</Badge>}
+                    {!paid && request && (
+                      <Badge className="bg-orange-100 text-orange-800">
+                        ลูกค้าขอชำระ: {request.method === 'cash' ? 'เงินสด' : 'QR Code'}
+                      </Badge>
+                    )}
                     <Badge className={statusColors[order.status]}>{orderStatusLabels[order.status]}</Badge>
+
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
