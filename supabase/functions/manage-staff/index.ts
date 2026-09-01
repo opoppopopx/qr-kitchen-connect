@@ -109,6 +109,20 @@ Deno.serve(async (req) => {
       if (!userId || String(body.password ?? "").length < 1) return json({ error: "กรุณากรอกรหัสผ่าน" }, 400);
       const { error } = await admin.auth.admin.updateUserById(userId, { password });
       if (error) return json({ error: error.message }, 400);
+
+      // บันทึกประวัติการเปลี่ยนรหัสผ่าน (ไม่เก็บรหัสผ่าน)
+      const { data: names } = await admin
+        .from("profiles")
+        .select("id, username")
+        .in("id", [userId, callerId]);
+      const nameOf = (id: string) => (names ?? []).find((n: { id: string; username: string }) => n.id === id)?.username ?? "";
+      await admin.from("password_change_logs").insert({
+        target_user_id: userId,
+        target_username: nameOf(userId),
+        changed_by_user_id: callerId,
+        changed_by_username: nameOf(callerId),
+      });
+
       return json({ ok: true });
     }
 
