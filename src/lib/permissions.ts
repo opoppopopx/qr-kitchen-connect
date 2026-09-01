@@ -10,15 +10,16 @@ export interface NavItem {
   roles: AppRole[];
 }
 
-const ALL: AppRole[] = ['admin', 'manager', 'cashier', 'kitchen', 'waiter'];
+
+
 
 export const navItems: NavItem[] = [
   { title: "แดชบอร์ด", url: "/", icon: LayoutDashboard, roles: ['admin', 'manager', 'cashier'] },
-  { title: "ออร์เดอร์", url: "/orders", icon: ClipboardList, roles: ALL },
+  { title: "ออร์เดอร์", url: "/orders", icon: ClipboardList, roles: ['admin', 'manager', 'cashier', 'waiter'] },
   { title: "โต๊ะอาหาร", url: "/tables", icon: UtensilsCrossed, roles: ['admin', 'manager', 'cashier', 'waiter'] },
   { title: "QR โต๊ะ", url: "/qr", icon: QrCode, roles: ['admin', 'manager', 'cashier', 'waiter'] },
-  { title: "ห้องครัว", url: "/kitchen", icon: ChefHat, roles: ['admin', 'manager', 'kitchen', 'waiter'] },
-  { title: "เมนูอาหาร", url: "/menu", icon: BookOpen, roles: ['admin', 'manager', 'kitchen'] },
+  { title: "ห้องครัว", url: "/kitchen", icon: ChefHat, roles: ['admin', 'manager', 'waiter'] },
+  { title: "เมนูอาหาร", url: "/menu", icon: BookOpen, roles: ['admin', 'manager'] },
   { title: "ลูกค้าสมาชิก", url: "/customers", icon: Users, roles: ['admin', 'manager', 'cashier'] },
   { title: "จัดการพนักงาน", url: "/staff", icon: UserCog, roles: ['admin', 'manager'] },
 ];
@@ -26,6 +27,8 @@ export const navItems: NavItem[] = [
 
 export const canAccess = (role: AppRole | null, path: string) => {
   if (!role) return false;
+  // Kitchen staff use a dedicated standalone screen only
+  if (role === 'kitchen') return false;
   const item = navItems.find(n => n.url === path);
   if (!item) return true;
   return item.roles.includes(role);
@@ -33,6 +36,8 @@ export const canAccess = (role: AppRole | null, path: string) => {
 
 export const homeFor = (role: AppRole | null) => {
   if (!role) return "/login";
+  if (role === 'kitchen') return "/kd";
   const first = navItems.find(n => n.roles.includes(role));
   return first?.url ?? "/orders";
 };
+
