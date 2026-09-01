@@ -61,7 +61,6 @@ export default function CustomerOrderPage() {
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   const submitOrder = async () => {
-  const submitOrder = async () => {
     if (submitting) return;
     if (!table) return;
     if (table.status !== 'occupied') {
@@ -184,8 +183,8 @@ export default function CustomerOrderPage() {
                   <span>รวมทั้งหมด</span>
                   <span className="text-primary">฿{cartTotal.toLocaleString()}</span>
                 </div>
-                <Button className="w-full" size="lg" onClick={submitOrder}>
-                  <Send className="h-4 w-4 mr-2" /> ส่งออร์เดอร์
+                <Button className="w-full" size="lg" onClick={submitOrder} disabled={submitting}>
+                  <Send className="h-4 w-4 mr-2" /> {submitting ? "กำลังส่ง..." : "ส่งออร์เดอร์"}
                 </Button>
               </SheetFooter>
             )}
