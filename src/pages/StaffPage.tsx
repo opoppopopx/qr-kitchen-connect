@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserPlus, Trash2, KeyRound } from "lucide-react";
+import { UserPlus, Trash2, KeyRound, History } from "lucide-react";
 import { roleLabels, type AppRole, type StaffMember } from "@/types/restaurant";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -18,6 +18,13 @@ const roleColors: Record<AppRole, string> = {
   cashier: "bg-blue-100 text-blue-800",
   kitchen: "bg-orange-100 text-orange-800",
   waiter: "bg-green-100 text-green-800",
+};
+
+type PwLog = {
+  id: string;
+  target_username: string;
+  changed_by_username: string;
+  created_at: string;
 };
 
 const ROLES: AppRole[] = ["admin", "manager", "cashier", "kitchen", "waiter"];
@@ -41,6 +48,7 @@ export default function StaffPage() {
   const [pwTarget, setPwTarget] = useState<StaffMember | null>(null);
   const [pwValue, setPwValue] = useState("");
   const [pwValue2, setPwValue2] = useState("");
+  const [pwLogs, setPwLogs] = useState<PwLog[]>([]);
 
   const load = useCallback(async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
@@ -58,7 +66,18 @@ export default function StaffPage() {
     })));
   }, []);
 
+  const loadLogs = useCallback(async () => {
+    if (!isAdmin) { setPwLogs([]); return; }
+    const { data } = await supabase
+      .from("password_change_logs")
+      .select("id, target_username, changed_by_username, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setPwLogs(data ?? []);
+  }, [isAdmin]);
+
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadLogs(); }, [loadLogs]);
 
   const addStaff = async () => {
     setBusy(true);
@@ -95,6 +114,7 @@ export default function StaffPage() {
     if (error) { toast.error(error); return; }
     toast.success(`เปลี่ยนรหัสผ่านของ @${pwTarget.username} แล้ว`);
     setPwTarget(null); setPwValue(""); setPwValue2("");
+    await loadLogs();
   };
 
 
@@ -222,6 +242,36 @@ export default function StaffPage() {
           <p className="col-span-full text-center text-muted-foreground py-8">ยังไม่มีพนักงานในระบบ</p>
         )}
       </div>
+
+      {/* Admin-only: password change history */}
+      {isAdmin && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <History className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">ประวัติการเปลี่ยนรหัสผ่าน</h2>
+              <Badge variant="secondary" className="ml-auto">{pwLogs.length} รายการ</Badge>
+            </div>
+            {pwLogs.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">ยังไม่มีประวัติการเปลี่ยนรหัสผ่าน</p>
+            ) : (
+              <div className="divide-y">
+                {pwLogs.map(l => (
+                  <div key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                    <span>
+                      เปลี่ยนรหัสผ่านของ <span className="font-medium">@{l.target_username || "-"}</span>
+                      {" "}โดย <span className="font-medium">@{l.changed_by_username || "-"}</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      {new Date(l.created_at).toLocaleString("th-TH")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Admin-only: change any staff password */}
       <Dialog open={!!pwTarget} onOpenChange={o => { if (!o) setPwTarget(null); }}>
