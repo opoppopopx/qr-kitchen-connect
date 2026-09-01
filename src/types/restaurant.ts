@@ -100,3 +100,47 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   served: 'เสิร์ฟแล้ว',
   cancelled: 'ยกเลิก',
 };
+
+export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'seated';
+
+export interface Reservation {
+  id: string;
+  code: string;
+  name: string;
+  phone: string;
+  guests: number;
+  reserved_at: string;
+  zone: string;
+  table_id: string | null;
+  note: string;
+  food_amount: number;
+  deposit_amount: number;
+  total_due: number;
+  status: ReservationStatus;
+  payment_ref: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReservationItem {
+  id: string;
+  reservation_id: string;
+  product_id: string;
+  quantity: number;
+  price: number;
+  note: string;
+}
+
+export interface RestaurantSettings {
+  id: string;
+  promptpay_id: string;
+  account_name: string;
+  deposit_amount: number;
+}
+
+export const reservationStatusLabels: Record<ReservationStatus, string> = {
+  pending: 'รอตรวจสอบการโอน',
+  confirmed: 'ยืนยันการจองแล้ว',
+  cancelled: 'ยกเลิก',
+  seated: 'ลูกค้ามาถึงแล้ว',
+};
