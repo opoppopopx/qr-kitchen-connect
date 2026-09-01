@@ -247,7 +247,7 @@ export default function ReservationsPage() {
                   )}
 
                   {r.status === "confirmed" && (
-                    <Button size="sm" onClick={() => setStatus(r, "seated")}>ลูกค้ามาถึงแล้ว</Button>
+                    <Button size="sm" disabled={saving} onClick={() => seatReservation(r)}>ลูกค้ามาถึงแล้ว</Button>
                   )}
                   {r.status !== "cancelled" && (
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setStatus(r, "cancelled")}>
