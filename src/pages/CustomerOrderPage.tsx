@@ -10,7 +10,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import type { CartItem, Product } from "@/types/restaurant";
+import { supabase } from "@/integrations/supabase/client";
+import { promptPayPayload } from "@/lib/promptpay";
+import type { CartItem, Product, RestaurantSettings } from "@/types/restaurant";
 import { orderStatusLabels } from "@/types/restaurant";
 
 export default function CustomerOrderPage() {
@@ -21,7 +23,15 @@ export default function CustomerOrderPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [payDismissed, setPayDismissed] = useState(false);
   const [qrPay, setQrPay] = useState(false);
+  const [qrAmount, setQrAmount] = useState(0);
+  const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    supabase.from("restaurant_settings").select("*").limit(1).maybeSingle()
+      .then(({ data }) => { if (data) setSettings(data as RestaurantSettings); });
+  }, []);
+
 
   const table = tables.find(t => t.id === tableId);
   const myOrders = useMemo(
@@ -39,8 +49,9 @@ export default function CustomerOrderPage() {
 
   useEffect(() => {
     if (servedUnpaid.length > 0 && !payDismissed) setPayOpen(true);
-    if (servedUnpaid.length === 0) { setPayOpen(false); setPayDismissed(false); setQrPay(false); }
-  }, [servedUnpaid.length, payDismissed]);
+    if (servedUnpaid.length === 0 && !qrPay) { setPayOpen(false); setPayDismissed(false); }
+  }, [servedUnpaid.length, payDismissed, qrPay]);
+
 
 
   const addToCart = (product: Product) =>
@@ -92,18 +103,26 @@ export default function CustomerOrderPage() {
       toast.error("ไม่มีรายการที่ต้องชำระ");
       return;
     }
+    const amount = pending.reduce((s, o) => s + Number(o.total_amount), 0);
     for (const o of pending) await requestPayment(o.id, method, Number(o.total_amount));
     if (method === 'cash') {
       toast.success("แจ้งชำระเงินสดแล้ว พนักงานจะมาที่โต๊ะ");
       setPayOpen(false);
       setPayDismissed(true);
     } else {
-      toast.success("แจ้งชำระผ่าน QR แล้ว กรุณาสแกนเพื่อชำระเงิน");
+      setQrAmount(amount);
       setQrPay(true);
+      setPayOpen(true);
+      setPayDismissed(false);
+      toast.success("สแกน QR พร้อมเพย์เพื่อชำระเงิน");
     }
   };
 
-  const qrPayload = `PAYMENT|table:${table?.number ?? '-'}|amount:${payTotal || unpaidTotal}|orders:${(servedUnpaid.length ? servedUnpaid : myOrders).map(o => o.order_no).join(',')}`;
+  const qrAmountFinal = qrAmount || payTotal || unpaidTotal;
+  const qrPayload = settings?.promptpay_id
+    ? promptPayPayload(settings.promptpay_id, qrAmountFinal)
+    : "";
+
 
 
   if (loading) {
@@ -289,23 +308,40 @@ export default function CustomerOrderPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BellRing className="h-5 w-5 text-primary" /> เสิร์ฟครบแล้ว — ชำระเงิน
+              {qrPay ? <><QrCode className="h-5 w-5 text-primary" /> สแกนจ่ายด้วย QR พร้อมเพย์</>
+                : <><BellRing className="h-5 w-5 text-primary" /> เสิร์ฟครบแล้ว — ชำระเงิน</>}
             </DialogTitle>
             <DialogDescription>
-              โต๊ะ {table.number} • ยอดที่ต้องชำระ ฿{payTotal.toLocaleString()}
+              โต๊ะ {table.number} • ยอดที่ต้องชำระ ฿{(qrPay ? qrAmountFinal : payTotal).toLocaleString()}
             </DialogDescription>
           </DialogHeader>
 
           {qrPay ? (
             <div className="flex flex-col items-center gap-3">
-              <QRCodeSVG value={qrPayload} size={200} includeMargin />
-              <p className="text-sm text-center text-muted-foreground">
-                สแกน QR เพื่อชำระเงิน ฿{payTotal.toLocaleString()} <br />
-                เมื่อชำระแล้วพนักงานจะกดยืนยันการชำระเงินให้
-              </p>
-              <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); }}>
+              {qrPayload ? (
+                <>
+                  <div className="rounded-xl border bg-card p-3">
+                    <QRCodeSVG value={qrPayload} size={220} includeMargin />
+                  </div>
+                  <p className="text-sm font-medium">
+                    พร้อมเพย์: {settings?.account_name || settings?.promptpay_id}
+                  </p>
+                  <p className="text-lg font-bold text-primary">฿{qrAmountFinal.toLocaleString()}</p>
+                  <p className="text-xs text-center text-muted-foreground">
+                    เปิดแอปธนาคาร → สแกน QR → ตรวจยอดแล้วโอน<br />
+                    เมื่อชำระแล้วพนักงานจะกดยืนยันการชำระเงินให้
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground">
+                  ร้านยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาแจ้งพนักงานเพื่อชำระเงินที่เคาน์เตอร์
+                </p>
+              )}
+              <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); setQrPay(false); }}>
                 ปิดหน้าต่าง
               </Button>
+
+
             </div>
           ) : (
             <div className="space-y-2">
