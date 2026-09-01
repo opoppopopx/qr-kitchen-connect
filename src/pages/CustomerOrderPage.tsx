@@ -6,27 +6,39 @@ import { useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash2, Send } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import type { CartItem, Product } from "@/types/restaurant";
+
 
 export default function CustomerOrderPage() {
-  const {
-    tables, categories, products, cart,
-    addToCart, removeFromCart, updateCartQuantity, clearCart,
-    createOrder, isTableOpen,
-  } = useRestaurant();
+  const { tables, categories, products, createOrder } = useRestaurant();
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [selectedCat, setSelectedCat] = useState<string>(categories[0]?.id || "");
 
+  const addToCart = (product: Product) =>
+    setCart(prev => {
+      const found = prev.find(i => i.product.id === product.id);
+      if (found) return prev.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+      return [...prev, { product, quantity: 1 }];
+    });
+  const removeFromCart = (id: string) => setCart(prev => prev.filter(i => i.product.id !== id));
+  const updateCartQuantity = (id: string, quantity: number) =>
+    quantity <= 0
+      ? removeFromCart(id)
+      : setCart(prev => prev.map(i => i.product.id === id ? { ...i, quantity } : i));
+  const clearCart = () => setCart([]);
+
   const openTables = tables.filter(t => t.status === 'occupied');
-  const filteredProducts = products.filter(p => p.categoryId === selectedCat && p.available);
-  const cartTotal = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const filteredProducts = products.filter(p => p.category_id === selectedCat && p.available);
+  const cartTotal = cart.reduce((sum, i) => sum + Number(i.product.price) * i.quantity, 0);
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
     if (!selectedTable) {
       toast.error("กรุณาเลือกโต๊ะก่อน");
       return;
     }
-    if (!isTableOpen(selectedTable)) {
+    if (tables.find(t => t.id === selectedTable)?.status !== 'occupied') {
       toast.error("โต๊ะนี้ยังไม่ได้เปิด กรุณาแจ้งพนักงาน");
       return;
     }
@@ -34,10 +46,11 @@ export default function CustomerOrderPage() {
       toast.error("กรุณาเลือกรายการอาหาร");
       return;
     }
-    createOrder(selectedTable, cart);
+    await createOrder(selectedTable, cart, 'customer');
     clearCart();
     toast.success("สั่งอาหารสำเร็จ! 🎉");
   };
+
 
   return (
     <div className="space-y-6">

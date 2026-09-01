@@ -29,8 +29,8 @@ export default function KitchenPage() {
               </h3>
               <div className="space-y-3">
                 {colOrders.map(order => {
-                  const table = getTableById(order.tableId);
-                  const mins = Math.round((Date.now() - new Date(order.createdAt).getTime()) / 60000);
+                  const table = getTableById(order.table_id);
+                  const mins = Math.round((Date.now() - new Date(order.created_at).getTime()) / 60000);
                   return (
                     <Card key={order.id} className={`border-l-4 ${col.color}`}>
                       <CardHeader className="pb-2">
@@ -42,7 +42,7 @@ export default function KitchenPage() {
                       <CardContent>
                         <ul className="space-y-1 mb-3">
                           {order.items.map(item => {
-                            const product = getProductById(item.productId);
+                            const product = getProductById(item.product_id);
                             return (
                               <li key={item.id} className="text-sm flex justify-between">
                                 <span>{product?.image} {product?.name}</span>
