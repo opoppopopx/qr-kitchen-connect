@@ -1,0 +1,196 @@
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
+import { toast } from "sonner";
+import { Check, QrCode, X, Users, Copy } from "lucide-react";
+import { promptPayPayload } from "@/lib/promptpay";
+import { getPublicBaseUrl } from "@/lib/publicUrl";
+import type {
+  Reservation, ReservationItem, ReservationStatus, RestaurantSettings,
+} from "@/types/restaurant";
+import { reservationStatusLabels } from "@/types/restaurant";
+
+const statusStyle: Record<ReservationStatus, string> = {
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  confirmed: "bg-green-100 text-green-800 border-green-300",
+  cancelled: "bg-destructive/10 text-destructive border-destructive/30",
+  seated: "bg-primary/10 text-primary border-primary/30",
+};
+
+export default function ReservationsPage() {
+  const { getProductById } = useRestaurant();
+  const [rows, setRows] = useState<Reservation[]>([]);
+  const [items, setItems] = useState<ReservationItem[]>([]);
+  const [settings, setSettings] = useState<RestaurantSettings | null>(null);
+  const [qrRow, setQrRow] = useState<Reservation | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    const [r, i, s] = await Promise.all([
+      supabase.from("reservations").select("*").order("reserved_at", { ascending: false }),
+      supabase.from("reservation_items").select("*"),
+      supabase.from("restaurant_settings").select("*").limit(1).maybeSingle(),
+    ]);
+    setRows((r.data ?? []) as Reservation[]);
+    setItems((i.data ?? []) as ReservationItem[]);
+    if (s.data) setSettings(s.data as RestaurantSettings);
+  }, []);
+
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel("reservation-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservation_items" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
+
+  const setStatus = async (row: Reservation, status: ReservationStatus) => {
+    await supabase.from("reservations").update({ status }).eq("id", row.id);
+    toast.success(`อัปเดตการจอง ${row.code} เป็น "${reservationStatusLabels[status]}"`);
+    load();
+  };
+
+  const saveSettings = async () => {
+    if (!settings) return;
+    setSaving(true);
+    const { error } = await supabase.from("restaurant_settings").update({
+      promptpay_id: settings.promptpay_id,
+      account_name: settings.account_name,
+      deposit_amount: Number(settings.deposit_amount) || 0,
+    }).eq("id", settings.id);
+    setSaving(false);
+    toast[error ? "error" : "success"](error ? "บันทึกไม่สำเร็จ" : "บันทึกการตั้งค่าแล้ว");
+  };
+
+  const bookingUrl = `${getPublicBaseUrl()}/book`;
+  const qrValue = settings && qrRow ? promptPayPayload(settings.promptpay_id, Number(qrRow.total_due)) : "";
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">การจองโต๊ะ</h2>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">ตั้งค่ารับมัดจำ</CardTitle>
+          <CardDescription>ใช้สร้าง QR พร้อมเพย์บนหน้าจองของลูกค้า</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label>พร้อมเพย์ (เบอร์โทร/เลขบัตร)</Label>
+              <Input value={settings?.promptpay_id ?? ""} placeholder="0812345678"
+                onChange={e => settings && setSettings({ ...settings, promptpay_id: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>ชื่อบัญชี</Label>
+              <Input value={settings?.account_name ?? ""} placeholder="ร้านอาหาร..."
+                onChange={e => settings && setSettings({ ...settings, account_name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>ค่ามัดจำ (บาท)</Label>
+              <Input type="number" min={0} value={settings?.deposit_amount ?? 0}
+                onChange={e => settings && setSettings({ ...settings, deposit_amount: Number(e.target.value) })} />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={saveSettings} disabled={saving || !settings}>บันทึกการตั้งค่า</Button>
+            <Button variant="outline" onClick={() => { navigator.clipboard.writeText(bookingUrl); toast.success("คัดลอกลิงก์หน้าจองแล้ว"); }}>
+              <Copy className="h-4 w-4 mr-1" /> คัดลอกลิงก์หน้าจอง
+            </Button>
+            <span className="text-xs text-muted-foreground break-all">{bookingUrl}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {rows.length === 0 && <p className="text-sm text-muted-foreground">ยังไม่มีรายการจอง</p>}
+        {rows.map(r => {
+          const list = items.filter(i => i.reservation_id === r.id);
+          return (
+            <Card key={r.id}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-bold">#{r.code} — {r.name}</p>
+                    <p className="text-xs text-muted-foreground">{r.phone}</p>
+                  </div>
+                  <Badge className={statusStyle[r.status]}>{reservationStatusLabels[r.status]}</Badge>
+                </div>
+                <p className="text-sm">{new Date(r.reserved_at).toLocaleString("th-TH")}</p>
+                <p className="text-sm flex items-center gap-1">
+                  <Users className="h-3 w-3" /> {r.guests} คน{r.zone ? ` • โซน ${r.zone}` : ""}
+                </p>
+                {r.note && <p className="text-xs text-muted-foreground">หมายเหตุ: {r.note}</p>}
+
+                {list.length > 0 && (
+                  <div className="rounded-lg border p-2 space-y-1">
+                    <p className="text-xs font-medium">อาหารสั่งล่วงหน้า</p>
+                    {list.map(i => (
+                      <p key={i.id} className="text-xs text-muted-foreground">
+                        {getProductById(i.product_id)?.name ?? "เมนู"} × {i.quantity}
+                        {i.note ? ` (${i.note})` : ""}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>ยอดต้องโอน</span>
+                  <span className="text-primary">
+                    ฿{Number(r.total_due).toLocaleString()}
+                    <span className="text-xs font-normal text-muted-foreground"> (มัดจำ ฿{Number(r.deposit_amount).toLocaleString()})</span>
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button size="sm" variant="outline" onClick={() => setQrRow(r)}>
+                    <QrCode className="h-3 w-3 mr-1" /> QR โอน
+                  </Button>
+                  {r.status === "pending" && (
+                    <Button size="sm" onClick={() => setStatus(r, "confirmed")}>
+                      <Check className="h-3 w-3 mr-1" /> ยืนยันได้รับเงิน
+                    </Button>
+                  )}
+                  {r.status === "confirmed" && (
+                    <Button size="sm" onClick={() => setStatus(r, "seated")}>ลูกค้ามาถึงแล้ว</Button>
+                  )}
+                  {r.status !== "cancelled" && (
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setStatus(r, "cancelled")}>
+                      <X className="h-3 w-3 mr-1" /> ยกเลิก
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Dialog open={!!qrRow} onOpenChange={o => !o && setQrRow(null)}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-center">QR มัดจำ #{qrRow?.code}</DialogTitle>
+            <DialogDescription className="text-center">
+              ยอด ฿{Number(qrRow?.total_due ?? 0).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-2">
+            {qrValue
+              ? <QRCodeSVG value={qrValue} size={220} includeMargin />
+              : <p className="text-sm text-center text-muted-foreground">กรุณาตั้งค่าพร้อมเพย์ของร้านก่อน</p>}
+            {settings?.account_name && <p className="text-sm font-medium">{settings.account_name}</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
