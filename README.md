@@ -1,73 +1,86 @@
-# Welcome to your Lovable project
+# Table Order Connect
 
-## Project info
+ช่วยสร้างระบบสั่งอาหารด้วย QR Code (Web Application)  ตามรายละเอียดดังนี้
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+หน้าหลัก (Main Dashboard/Admin)
 
-## How can I edit this code?
+มีระบบ Dashboard แสดงรายการออร์เดอร์ที่เข้ามาใหม่พร้อมเสียงแจ้งเตือนแบบ Real-time
 
-There are several ways of editing your application.
 
-**Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+แสดงสถานะภาพรวมของโต๊ะอาหารทั้งหมด
 
-Changes made via Lovable will be committed automatically to this repo.
 
-**Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+มีหน้าสรุปยอดขายรายวันและจำนวนรายการอาหารที่ขายได้
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Follow these steps:
+
+ หน้าสั่งอาหารสำหรับลูกค้า (Client Side):
+
+
+
+ระบบเลือกโต๊ะ: ออกแบบหน้าจอที่มีเลขโต๊ะ (Table ID) แบ่งเป็นโซนหรือแถว
+
+
+
+
+
+เมนูอาหาร: แสดงรายการอาหารแยกตามหมวดหมู่ (Categories) มีรูปภาพ ราคา และสถานะเมนู (มีของ/หมด)
+
+
+
+
+
+ระบบตะกร้าสินค้า: สามารถเลือกรายการอาหาร ระบุจำนวน และคำนวณราคาสุทธิได้
+
+
+
+หน้าจัดการสถานะ (Kitchen/Staff Side):
+
+มีหน้าจอสำหรับพ่อครัวเพื่อกดเปลี่ยนสถานะออร์เดอร์ เช่น 'กำลังทำ' หรือ 'ทำเสร็จแล้ว' เพื่อแจ้งเตือนกลับไปยังลูกค้า
+
+
+
+เจ้าหน้าที่สามารถจัดการสถานะเมนูอาหาร (เปิดขาย/สินค้าหมด) ได้แบบ Real-time
+
+
+
+หน้าชำระเงินและแจ้งเตือน:
+
+ระบบรองรับการชำระเงินทั้งเงินสดและ QR Code
+
+
+
+พนักงานสามารถกดยืนยันการชำระเงินและออกใบเสร็จจากระบบได้
+
+
+
+ เงื่อนไขเพิ่มเติม:
+
+ระบบต้องป้องกัน Fake Orders โดยจะสั่งอาหารได้ก็ต่อเมื่อพนักงานทำการ 'เปิดโต๊ะ' ในระบบก่อนเท่านั้น
+
+
+
+ใช้โครงสร้างฐานข้อมูล (Schema) ตามตาราง: Tables, Products, Orders, Orderitems และ Payments "
+
+This project was built with [Lovable](https://lovable.dev).
+
+## Build with Lovable
+
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/e555cd20-8e97-436e-b2d6-8f9a17f3c238).
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Development
+
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
+git clone <this-repository-url>
+cd <repository-name>
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
