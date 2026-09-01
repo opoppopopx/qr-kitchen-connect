@@ -338,6 +338,9 @@ export default function CustomerOrderPage() {
                 </p>
               )}
               <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); setQrPay(false); }}>
+                ปิดหน้าต่าง
+              </Button>
+
 
             </div>
           ) : (
