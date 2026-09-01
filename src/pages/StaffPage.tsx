@@ -30,13 +30,17 @@ const callStaffFn = async (body: Record<string, unknown>) => {
 };
 
 export default function StaffPage() {
-  const { user } = useAuth();
+  const { user, role: myRole } = useAuth();
+  const isAdmin = myRole === "admin";
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ username: "", password: "", full_name: "", phone: "", salary: "", role: "waiter" as AppRole });
   const [salaryEdit, setSalaryEdit] = useState<string | null>(null);
   const [salaryInput, setSalaryInput] = useState("");
+  const [pwTarget, setPwTarget] = useState<StaffMember | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwValue2, setPwValue2] = useState("");
 
   const load = useCallback(async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
