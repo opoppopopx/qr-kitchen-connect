@@ -57,10 +57,26 @@ export default function ReservationsPage() {
   }, [load]);
 
   const setStatus = async (row: Reservation, status: ReservationStatus) => {
-    await supabase.from("reservations").update({ status }).eq("id", row.id);
+    const { error } = await supabase.from("reservations").update({ status }).eq("id", row.id);
+    if (error) { toast.error("อัปเดตไม่สำเร็จ: " + error.message); return; }
     toast.success(`อัปเดตการจอง ${row.code} เป็น "${reservationStatusLabels[status]}"`);
     load();
   };
+
+  const confirmTransfer = async () => {
+    if (!confirmRow) return;
+    setSaving(true);
+    const { error } = await supabase.from("reservations")
+      .update({ status: "confirmed", payment_ref: ref.trim() })
+      .eq("id", confirmRow.id);
+    setSaving(false);
+    if (error) { toast.error("ยืนยันไม่สำเร็จ: " + error.message); return; }
+    toast.success(`ยืนยันการโอนของ #${confirmRow.code} แล้ว`);
+    setConfirmRow(null);
+    setRef("");
+    load();
+  };
+
 
   const saveSettings = async () => {
     if (!settings) return;
