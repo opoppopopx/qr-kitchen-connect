@@ -294,6 +294,143 @@ export type Database = {
         }
         Relationships: []
       }
+      reservation_items: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          price: number
+          product_id: string
+          quantity: number
+          reservation_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string
+          price?: number
+          product_id: string
+          quantity?: number
+          reservation_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          price?: number
+          product_id?: string
+          quantity?: number
+          reservation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservation_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservation_items_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reservations: {
+        Row: {
+          code: string
+          created_at: string
+          deposit_amount: number
+          food_amount: number
+          guests: number
+          id: string
+          name: string
+          note: string
+          payment_ref: string
+          phone: string
+          reserved_at: string
+          status: Database["public"]["Enums"]["reservation_status"]
+          table_id: string | null
+          total_due: number
+          updated_at: string
+          zone: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          deposit_amount?: number
+          food_amount?: number
+          guests?: number
+          id?: string
+          name: string
+          note?: string
+          payment_ref?: string
+          phone?: string
+          reserved_at: string
+          status?: Database["public"]["Enums"]["reservation_status"]
+          table_id?: string | null
+          total_due?: number
+          updated_at?: string
+          zone?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deposit_amount?: number
+          food_amount?: number
+          guests?: number
+          id?: string
+          name?: string
+          note?: string
+          payment_ref?: string
+          phone?: string
+          reserved_at?: string
+          status?: Database["public"]["Enums"]["reservation_status"]
+          table_id?: string | null
+          total_due?: number
+          updated_at?: string
+          zone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_settings: {
+        Row: {
+          account_name: string
+          created_at: string
+          deposit_amount: number
+          id: string
+          promptpay_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_name?: string
+          created_at?: string
+          deposit_amount?: number
+          id?: string
+          promptpay_id?: string
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          created_at?: string
+          deposit_amount?: number
+          id?: string
+          promptpay_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tables: {
         Row: {
           created_at: string
@@ -351,6 +488,7 @@ export type Database = {
       order_status: "pending" | "preparing" | "ready" | "served" | "cancelled"
       payment_method: "cash" | "qr_code"
       payment_status: "pending" | "completed"
+      reservation_status: "pending" | "confirmed" | "cancelled" | "seated"
       table_status: "available" | "occupied" | "reserved"
     }
     CompositeTypes: {
@@ -483,6 +621,7 @@ export const Constants = {
       order_status: ["pending", "preparing", "ready", "served", "cancelled"],
       payment_method: ["cash", "qr_code"],
       payment_status: ["pending", "completed"],
+      reservation_status: ["pending", "confirmed", "cancelled", "seated"],
       table_status: ["available", "occupied", "reserved"],
     },
   },
