@@ -1,16 +1,26 @@
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, Copy, ExternalLink } from "lucide-react";
+import { Printer, Copy, ExternalLink, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
+import { getPublicBaseUrl, getPublicBaseUrlOverride, setPublicBaseUrl } from "@/lib/publicUrl";
 
 export default function QRCodesPage() {
   const { tables } = useRestaurant();
-  const origin = window.location.origin;
+  const [base, setBase] = useState(getPublicBaseUrl());
+  const [draft, setDraft] = useState(getPublicBaseUrlOverride());
   const zones = [...new Set(tables.map(t => t.zone))].sort();
 
-  const urlFor = (id: string) => `${origin}/t/${id}`;
+  const urlFor = (id: string) => `${base}/t/${id}`;
+
+  const saveBase = () => {
+    setPublicBaseUrl(draft);
+    setBase(getPublicBaseUrl());
+    toast.success("อัปเดตลิงก์ QR แล้ว");
+  };
 
   return (
     <div className="space-y-6">
@@ -25,6 +35,23 @@ export default function QRCodesPage() {
           <Printer className="h-4 w-4 mr-2" /> พิมพ์ทั้งหมด
         </Button>
       </div>
+
+      <Card className="print:hidden">
+        <CardContent className="p-4 space-y-2">
+          <p className="text-sm font-medium flex items-center gap-2">
+            <Globe className="h-4 w-4 text-primary" /> โดเมนสำหรับลูกค้า (ใช้สแกนจากเครื่องอื่น)
+          </p>
+          <p className="text-xs text-muted-foreground">
+            ใส่โดเมนที่เผยแพร่แล้ว เช่น https://ชื่อร้าน.lovable.app เพื่อให้มือถือลูกค้าเปิดได้ทุกเครื่อง
+          </p>
+          <div className="flex gap-2">
+            <Input placeholder={base} value={draft} onChange={e => setDraft(e.target.value)} />
+            <Button onClick={saveBase}>บันทึก</Button>
+          </div>
+          <p className="text-xs text-muted-foreground break-all">ลิงก์ปัจจุบัน: {base}/t/…</p>
+        </CardContent>
+      </Card>
+
 
       {zones.map(zone => (
         <div key={zone} className="space-y-3">
