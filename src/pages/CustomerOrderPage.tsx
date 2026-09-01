@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash2, Send } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import type { CartItem, Product } from "@/types/restaurant";
+
 
 export default function CustomerOrderPage() {
   const { tables, categories, products, createOrder } = useRestaurant();
