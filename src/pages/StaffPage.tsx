@@ -222,6 +222,30 @@ export default function StaffPage() {
           <p className="col-span-full text-center text-muted-foreground py-8">ยังไม่มีพนักงานในระบบ</p>
         )}
       </div>
+
+      {/* Admin-only: change any staff password */}
+      <Dialog open={!!pwTarget} onOpenChange={o => { if (!o) setPwTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>เปลี่ยนรหัสผ่าน — @{pwTarget?.username}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>รหัสผ่านใหม่</Label>
+              <Input type="password" value={pwValue} onChange={e => setPwValue(e.target.value)} placeholder="อย่างน้อย 6 ตัวอักษร" />
+            </div>
+            <div className="space-y-1">
+              <Label>ยืนยันรหัสผ่านใหม่</Label>
+              <Input type="password" value={pwValue2} onChange={e => setPwValue2(e.target.value)} />
+            </div>
+            <p className="text-xs text-muted-foreground">เฉพาะแอดมินเท่านั้นที่เปลี่ยนรหัสผ่านของพนักงานได้</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={resetPassword} disabled={busy}>บันทึกรหัสผ่านใหม่</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
