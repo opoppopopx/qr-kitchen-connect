@@ -18,18 +18,28 @@ Deno.serve(async (req) => {
   try {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) return json({ error: "unauthorized" }, 401);
-
-    const { data: userData, error: userErr } = await admin.auth.getUser(token);
-    if (userErr || !userData.user) return json({ error: "unauthorized" }, 401);
-
-    const { data: isBoss } = await admin.rpc("is_boss", { _user_id: userData.user.id });
-    if (!isBoss) return json({ error: "forbidden" }, 403);
-
     const body = await req.json();
     const action = body?.action;
+
+    // One-time bootstrap: allowed only while no staff account exists at all.
+    const { count: staffCount } = await admin
+      .from("profiles").select("id", { count: "exact", head: true });
+    const bootstrap = (staffCount ?? 0) === 0 && action === "create";
+
+    let callerId = "";
+    if (!bootstrap) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const token = authHeader.replace("Bearer ", "");
+      if (!token) return json({ error: "unauthorized" }, 401);
+
+      const { data: userData, error: userErr } = await admin.auth.getUser(token);
+      if (userErr || !userData.user) return json({ error: "unauthorized" }, 401);
+      callerId = userData.user.id;
+
+      const { data: isBoss } = await admin.rpc("is_boss", { _user_id: callerId });
+      if (!isBoss) return json({ error: "forbidden" }, 403);
+    }
+
 
     if (action === "create") {
       const username = String(body.username ?? "").trim().toLowerCase();
