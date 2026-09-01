@@ -4,18 +4,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useMemo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Trash2, Send, QrCode, Banknote } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Minus, Plus, ShoppingCart, Trash2, Send, QrCode, Banknote, BellRing } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import type { CartItem, Product } from "@/types/restaurant";
 import { orderStatusLabels } from "@/types/restaurant";
 
 export default function CustomerOrderPage() {
   const { tableId } = useParams();
-  const { tables, categories, products, orders, createOrder, requestPayment, loading } = useRestaurant();
+  const { tables, categories, products, orders, payments, createOrder, requestPayment, loading } = useRestaurant();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCat, setSelectedCat] = useState<string>("all");
+  const [payOpen, setPayOpen] = useState(false);
+  const [payDismissed, setPayDismissed] = useState(false);
+  const [qrPay, setQrPay] = useState(false);
 
   const table = tables.find(t => t.id === tableId);
   const myOrders = useMemo(
@@ -23,6 +28,19 @@ export default function CustomerOrderPage() {
     [orders, tableId],
   );
   const unpaidTotal = myOrders.reduce((s, o) => s + Number(o.total_amount), 0);
+
+  // Orders that were served but have no payment record yet
+  const servedUnpaid = useMemo(
+    () => myOrders.filter(o => o.status === 'served' && !payments.some(p => p.order_id === o.id)),
+    [myOrders, payments],
+  );
+  const payTotal = servedUnpaid.reduce((s, o) => s + Number(o.total_amount), 0);
+
+  useEffect(() => {
+    if (servedUnpaid.length > 0 && !payDismissed) setPayOpen(true);
+    if (servedUnpaid.length === 0) { setPayOpen(false); setPayDismissed(false); setQrPay(false); }
+  }, [servedUnpaid.length, payDismissed]);
+
 
   const addToCart = (product: Product) =>
     setCart(prev => {
@@ -60,15 +78,25 @@ export default function CustomerOrderPage() {
     toast.success("ส่งออร์เดอร์ไปที่ครัวแล้ว 🎉");
   };
 
-  const pay = async (method: 'cash' | 'qr_code') => {
-    const pending = myOrders.filter(o => o.status !== 'cancelled');
+  const pay = async (method: 'cash' | 'qr_code', targets = myOrders) => {
+    const pending = targets.filter(o => o.status !== 'cancelled' && !payments.some(p => p.order_id === o.id));
     if (!pending.length) {
-      toast.error("ยังไม่มีออร์เดอร์");
+      toast.error("ไม่มีรายการที่ต้องชำระ");
       return;
     }
     for (const o of pending) await requestPayment(o.id, method, Number(o.total_amount));
-    toast.success(method === 'cash' ? "แจ้งชำระเงินสดแล้ว พนักงานจะมาที่โต๊ะ" : "แจ้งชำระผ่าน QR แล้ว");
+    if (method === 'cash') {
+      toast.success("แจ้งชำระเงินสดแล้ว พนักงานจะมาที่โต๊ะ");
+      setPayOpen(false);
+      setPayDismissed(true);
+    } else {
+      toast.success("แจ้งชำระผ่าน QR แล้ว กรุณาสแกนเพื่อชำระเงิน");
+      setQrPay(true);
+    }
   };
+
+  const qrPayload = `PAYMENT|table:${table?.number ?? '-'}|amount:${payTotal || unpaidTotal}|orders:${(servedUnpaid.length ? servedUnpaid : myOrders).map(o => o.order_no).join(',')}`;
+
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">กำลังโหลดเมนู...</div>;
@@ -244,6 +272,49 @@ export default function CustomerOrderPage() {
           </Card>
         )}
       </div>
+
+      {/* Payment popup after staff marks order as served */}
+      <Dialog
+        open={payOpen}
+        onOpenChange={o => { if (!o) { setPayOpen(false); setPayDismissed(true); } }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-primary" /> เสิร์ฟครบแล้ว — ชำระเงิน
+            </DialogTitle>
+            <DialogDescription>
+              โต๊ะ {table.number} • ยอดที่ต้องชำระ ฿{payTotal.toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+
+          {qrPay ? (
+            <div className="flex flex-col items-center gap-3">
+              <QRCodeSVG value={qrPayload} size={200} includeMargin />
+              <p className="text-sm text-center text-muted-foreground">
+                สแกน QR เพื่อชำระเงิน ฿{payTotal.toLocaleString()} <br />
+                เมื่อชำระแล้วพนักงานจะกดยืนยันการชำระเงินให้
+              </p>
+              <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); }}>
+                ปิดหน้าต่าง
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Button className="w-full" size="lg" onClick={() => pay('qr_code', servedUnpaid)}>
+                <QrCode className="h-4 w-4 mr-2" /> ชำระด้วย QR Code
+              </Button>
+              <Button variant="outline" className="w-full" size="lg" onClick={() => pay('cash', servedUnpaid)}>
+                <Banknote className="h-4 w-4 mr-2" /> ชำระด้วยเงินสด
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                หรือไปชำระที่พนักงาน พนักงานสามารถออก QR ให้สแกนได้เช่นกัน
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 }

@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
-import { Minus, Plus, Trash2, Printer, PlusCircle } from "lucide-react";
+import { Minus, Plus, Trash2, Printer, PlusCircle, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MenuPicker } from "@/components/MenuPicker";
 import { orderStatusLabels, type CartItem, type Order } from "@/types/restaurant";
+
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -27,8 +29,10 @@ export default function OrdersPage() {
   } = useRestaurant();
   const [filter, setFilter] = useState<string>("all");
   const [addTo, setAddTo] = useState<Order | null>(null);
+  const [qrOrder, setQrOrder] = useState<Order | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+
 
   const filtered = filter === "all" ? orders : orders.filter(o => o.status === filter);
   const editable = (o: Order) => o.status === 'pending' || o.status === 'preparing';
@@ -84,6 +88,8 @@ export default function OrdersPage() {
         {filtered.map(order => {
           const table = getTableById(order.table_id);
           const paid = payments.some(p => p.order_id === order.id && p.status === 'completed');
+          const request = payments.find(p => p.order_id === order.id && p.status === 'pending');
+
           return (
             <Card key={order.id}>
               <CardHeader className="pb-3">
@@ -96,7 +102,13 @@ export default function OrdersPage() {
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {paid && <Badge className="bg-green-100 text-green-800">ชำระแล้ว</Badge>}
+                    {!paid && request && (
+                      <Badge className="bg-orange-100 text-orange-800">
+                        ลูกค้าขอชำระ: {request.method === 'cash' ? 'เงินสด' : 'QR Code'}
+                      </Badge>
+                    )}
                     <Badge className={statusColors[order.status]}>{orderStatusLabels[order.status]}</Badge>
+
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -177,10 +189,14 @@ export default function OrdersPage() {
                       )}
                       {!paid && (
                         <>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'cash')}>ชำระเงินสด</Button>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'qr_code')}>ชำระ QR Code</Button>
+                          <Button size="sm" variant="secondary" onClick={() => setQrOrder(order)}>
+                            <QrCode className="h-4 w-4 mr-1" /> ออก QR ให้สแกน
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'cash')}>ยืนยันชำระเงินสด</Button>
+                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'qr_code')}>ยืนยันชำระ QR</Button>
                         </>
                       )}
+
                       <Button size="sm" variant="ghost" onClick={() => printReceipt(order)}>
                         <Printer className="h-4 w-4 mr-1" /> ใบเสร็จ
                       </Button>
@@ -210,6 +226,40 @@ export default function OrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR for customer to scan and pay at the counter */}
+      <Dialog open={!!qrOrder} onOpenChange={o => !o && setQrOrder(null)}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-center">QR ชำระเงิน — #{qrOrder?.order_no}</DialogTitle>
+            <DialogDescription className="text-center">
+              โต๊ะ {qrOrder ? getTableById(qrOrder.table_id)?.number ?? '-' : '-'} • ยอด ฿{Number(qrOrder?.total_amount ?? 0).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3">
+            {qrOrder && (
+              <QRCodeSVG
+                value={`PAYMENT|order:${qrOrder.order_no}|table:${getTableById(qrOrder.table_id)?.number ?? '-'}|amount:${Number(qrOrder.total_amount)}`}
+                size={200}
+                includeMargin
+              />
+            )}
+            <p className="text-xs text-center text-muted-foreground">ให้ลูกค้าสแกนเพื่อชำระเงิน แล้วกดยืนยันการชำระเงิน</p>
+            <Button
+              className="w-full"
+              onClick={async () => {
+                if (!qrOrder) return;
+                await processPayment(qrOrder.id, 'qr_code');
+                toast.success("ยืนยันการชำระเงินแล้ว");
+                setQrOrder(null);
+              }}
+            >
+              ยืนยันชำระเงินแล้ว
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
