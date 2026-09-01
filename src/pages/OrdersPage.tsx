@@ -29,8 +29,10 @@ export default function OrdersPage() {
   } = useRestaurant();
   const [filter, setFilter] = useState<string>("all");
   const [addTo, setAddTo] = useState<Order | null>(null);
+  const [qrOrder, setQrOrder] = useState<Order | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+
 
   const filtered = filter === "all" ? orders : orders.filter(o => o.status === filter);
   const editable = (o: Order) => o.status === 'pending' || o.status === 'preparing';
