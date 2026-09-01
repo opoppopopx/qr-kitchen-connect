@@ -49,8 +49,9 @@ export default function CustomerOrderPage() {
 
   useEffect(() => {
     if (servedUnpaid.length > 0 && !payDismissed) setPayOpen(true);
-    if (servedUnpaid.length === 0) { setPayOpen(false); setPayDismissed(false); setQrPay(false); }
-  }, [servedUnpaid.length, payDismissed]);
+    if (servedUnpaid.length === 0 && !qrPay) { setPayOpen(false); setPayDismissed(false); }
+  }, [servedUnpaid.length, payDismissed, qrPay]);
+
 
 
   const addToCart = (product: Product) =>
