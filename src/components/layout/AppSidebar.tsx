@@ -1,17 +1,26 @@
 import { NavLink } from "@/components/NavLink";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
 import { navItems } from "@/lib/permissions";
 import { useAuth } from "@/contexts/AuthContext";
+import { LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { role } = useAuth();
+  const { role, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+  };
 
   const items = navItems.filter(i => role && i.roles.includes(role));
+
 
   return (
     <Sidebar collapsible="icon">
