@@ -25,7 +25,7 @@ const statusStyle: Record<ReservationStatus, string> = {
 };
 
 export default function ReservationsPage() {
-  const { getProductById } = useRestaurant();
+  const { getProductById, tables, setTableStatus, createOrder, getTableById } = useRestaurant();
   const [rows, setRows] = useState<Reservation[]>([]);
   const [items, setItems] = useState<ReservationItem[]>([]);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
@@ -56,9 +56,26 @@ export default function ReservationsPage() {
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
+  /** เลือกโต๊ะอัตโนมัติตามโซน/จำนวนคนที่ลูกค้าเลือก */
+  const pickTable = (row: Reservation) => {
+    if (row.table_id) return row.table_id;
+    const candidates = tables
+      .filter(t => t.status === "available")
+      .filter(t => (row.zone ? t.zone === row.zone : true))
+      .filter(t => t.seats >= row.guests)
+      .sort((a, b) => a.seats - b.seats);
+    const fallback = tables
+      .filter(t => t.status === "available")
+      .sort((a, b) => b.seats - a.seats);
+    return candidates[0]?.id ?? fallback[0]?.id ?? null;
+  };
+
   const setStatus = async (row: Reservation, status: ReservationStatus) => {
     const { error } = await supabase.from("reservations").update({ status }).eq("id", row.id);
     if (error) { toast.error("อัปเดตไม่สำเร็จ: " + error.message); return; }
+    if (status === "cancelled" && row.table_id) {
+      await supabase.from("tables").update({ status: "available" }).eq("id", row.table_id);
+    }
     toast.success(`อัปเดตการจอง ${row.code} เป็น "${reservationStatusLabels[status]}"`);
     load();
   };
@@ -66,16 +83,62 @@ export default function ReservationsPage() {
   const confirmTransfer = async () => {
     if (!confirmRow) return;
     setSaving(true);
+    const tableId = pickTable(confirmRow);
     const { error } = await supabase.from("reservations")
-      .update({ status: "confirmed", payment_ref: ref.trim() })
+      .update({ status: "confirmed", payment_ref: ref.trim(), table_id: tableId })
       .eq("id", confirmRow.id);
+    if (!error && tableId) {
+      await supabase.from("tables").update({ status: "reserved" }).eq("id", tableId);
+    }
     setSaving(false);
     if (error) { toast.error("ยืนยันไม่สำเร็จ: " + error.message); return; }
-    toast.success(`ยืนยันการโอนของ #${confirmRow.code} แล้ว`);
+    const num = tableId ? getTableById(tableId)?.number : undefined;
+    toast.success(
+      `ยืนยันการโอนของ #${confirmRow.code} แล้ว` +
+      (num ? ` • จัดโต๊ะ ${num} ให้อัตโนมัติ` : " • ยังไม่มีโต๊ะว่างให้จัด"),
+    );
     setConfirmRow(null);
     setRef("");
     load();
   };
+
+  /** ลูกค้ามาถึง: เปิดโต๊ะ + ส่งอาหารที่สั่งล่วงหน้าเข้าครัวอัตโนมัติ */
+  const seatReservation = async (row: Reservation) => {
+    setSaving(true);
+    const tableId = row.table_id ?? pickTable(row);
+    if (!tableId) {
+      setSaving(false);
+      toast.error("ไม่มีโต๊ะว่าง — กรุณาจัดโต๊ะก่อน");
+      return;
+    }
+    await supabase.from("tables").update({ status: "occupied" }).eq("id", tableId);
+    await setTableStatus(tableId, "occupied");
+
+    const list = items.filter(i => i.reservation_id === row.id);
+    const cart = list
+      .map(i => {
+        const product = getProductById(i.product_id);
+        return product ? { product, quantity: i.quantity, note: i.note } : null;
+      })
+      .filter((c): c is { product: NonNullable<ReturnType<typeof getProductById>>; quantity: number; note: string } => !!c);
+
+    let sent = false;
+    if (cart.length) {
+      const id = await createOrder(tableId, cart, "reservation");
+      sent = !!id;
+    }
+
+    await supabase.from("reservations")
+      .update({ status: "seated", table_id: tableId })
+      .eq("id", row.id);
+    setSaving(false);
+    const num = getTableById(tableId)?.number;
+    toast.success(
+      `เปิดโต๊ะ ${num ?? ""} สำหรับ #${row.code}` + (sent ? " • ส่งออร์เดอร์เข้าครัวแล้ว 🍳" : ""),
+    );
+    load();
+  };
+
 
 
   const saveSettings = async () => {
@@ -147,6 +210,7 @@ export default function ReservationsPage() {
                 <p className="text-sm">{new Date(r.reserved_at).toLocaleString("th-TH")}</p>
                 <p className="text-sm flex items-center gap-1">
                   <Users className="h-3 w-3" /> {r.guests} คน{r.zone ? ` • โซน ${r.zone}` : ""}
+                  {r.table_id && getTableById(r.table_id) ? ` • โต๊ะ ${getTableById(r.table_id)!.number}` : ""}
                 </p>
                 {r.note && <p className="text-xs text-muted-foreground">หมายเหตุ: {r.note}</p>}
 
@@ -183,7 +247,7 @@ export default function ReservationsPage() {
                   )}
 
                   {r.status === "confirmed" && (
-                    <Button size="sm" onClick={() => setStatus(r, "seated")}>ลูกค้ามาถึงแล้ว</Button>
+                    <Button size="sm" disabled={saving} onClick={() => seatReservation(r)}>ลูกค้ามาถึงแล้ว</Button>
                   )}
                   {r.status !== "cancelled" && (
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setStatus(r, "cancelled")}>
