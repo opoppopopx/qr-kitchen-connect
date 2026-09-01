@@ -92,18 +92,26 @@ export default function CustomerOrderPage() {
       toast.error("ไม่มีรายการที่ต้องชำระ");
       return;
     }
+    const amount = pending.reduce((s, o) => s + Number(o.total_amount), 0);
     for (const o of pending) await requestPayment(o.id, method, Number(o.total_amount));
     if (method === 'cash') {
       toast.success("แจ้งชำระเงินสดแล้ว พนักงานจะมาที่โต๊ะ");
       setPayOpen(false);
       setPayDismissed(true);
     } else {
-      toast.success("แจ้งชำระผ่าน QR แล้ว กรุณาสแกนเพื่อชำระเงิน");
+      setQrAmount(amount);
       setQrPay(true);
+      setPayOpen(true);
+      setPayDismissed(false);
+      toast.success("สแกน QR พร้อมเพย์เพื่อชำระเงิน");
     }
   };
 
-  const qrPayload = `PAYMENT|table:${table?.number ?? '-'}|amount:${payTotal || unpaidTotal}|orders:${(servedUnpaid.length ? servedUnpaid : myOrders).map(o => o.order_no).join(',')}`;
+  const qrAmountFinal = qrAmount || payTotal || unpaidTotal;
+  const qrPayload = settings?.promptpay_id
+    ? promptPayPayload(settings.promptpay_id, qrAmountFinal)
+    : "";
+
 
 
   if (loading) {
