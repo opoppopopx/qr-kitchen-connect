@@ -36,8 +36,13 @@ Deno.serve(async (req) => {
       if (userErr || !userData.user) return json({ error: "unauthorized" }, 401);
       callerId = userData.user.id;
 
-      const { data: isBoss } = await admin.rpc("is_boss", { _user_id: callerId });
-      if (!isBoss) return json({ error: "forbidden" }, 403);
+      const { data: bossRoles } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerId)
+        .in("role", ["admin", "manager"])
+        .limit(1);
+      if (!bossRoles || bossRoles.length === 0) return json({ error: "forbidden" }, 403);
     }
 
 
