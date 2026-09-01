@@ -87,7 +87,7 @@ export default function StaffPage() {
 
   const resetPassword = async () => {
     if (!pwTarget) return;
-    if (pwValue.length < 6) { toast.error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"); return; }
+    if (pwValue.length < 1) { toast.error("กรุณากรอกรหัสผ่าน"); return; }
     if (pwValue !== pwValue2) { toast.error("รหัสผ่านยืนยันไม่ตรงกัน"); return; }
     setBusy(true);
     const { error } = await callStaffFn({ action: "set_password", user_id: pwTarget.id, password: pwValue });
@@ -232,7 +232,7 @@ export default function StaffPage() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>รหัสผ่านใหม่</Label>
-              <Input type="password" value={pwValue} onChange={e => setPwValue(e.target.value)} placeholder="อย่างน้อย 6 ตัวอักษร" />
+              <Input type="password" value={pwValue} onChange={e => setPwValue(e.target.value)} placeholder="ตั้งรหัสผ่านอะไรก็ได้" />
             </div>
             <div className="space-y-1">
               <Label>ยืนยันรหัสผ่านใหม่</Label>

@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       const salary = Number(body.salary ?? 0);
 
       if (!/^[a-z0-9._-]{3,32}$/.test(username)) return json({ error: "ชื่อผู้ใช้ไม่ถูกต้อง (a-z, 0-9, 3-32 ตัว)" }, 400);
-      if (password.length < 6) return json({ error: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" }, 400);
+      if (password.length < 1) return json({ error: "กรุณากรอกรหัสผ่าน" }, 400);
       if (!ROLES.includes(role)) return json({ error: "ตำแหน่งไม่ถูกต้อง" }, 400);
       if (!Number.isFinite(salary) || salary < 0) return json({ error: "เงินเดือนไม่ถูกต้อง" }, 400);
 
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
     if (action === "set_password") {
       const userId = String(body.user_id ?? "");
       const password = String(body.password ?? "");
-      if (!userId || password.length < 6) return json({ error: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" }, 400);
+      if (!userId || password.length < 1) return json({ error: "กรุณากรอกรหัสผ่าน" }, 400);
       const { error } = await admin.auth.admin.updateUserById(userId, { password });
       if (error) return json({ error: error.message }, 400);
       return json({ ok: true });
