@@ -88,6 +88,8 @@ export default function OrdersPage() {
         {filtered.map(order => {
           const table = getTableById(order.table_id);
           const paid = payments.some(p => p.order_id === order.id && p.status === 'completed');
+          const request = payments.find(p => p.order_id === order.id && p.status === 'pending');
+
           return (
             <Card key={order.id}>
               <CardHeader className="pb-3">
