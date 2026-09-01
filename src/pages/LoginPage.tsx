@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { homeFor } from "@/lib/permissions";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/types/restaurant";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -44,8 +45,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center">
-          <div className="text-4xl mb-2">🍊</div>
-          <CardTitle>ระบบสั่งอาหาร QR</CardTitle>
+          <BrandLogo size={56} withName={false} className="justify-center mb-2" />
+          <CardTitle>TableOrder</CardTitle>
           <CardDescription>เข้าสู่ระบบสำหรับพนักงาน</CardDescription>
         </CardHeader>
         <CardContent>

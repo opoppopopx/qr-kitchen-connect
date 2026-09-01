@@ -145,7 +145,7 @@ export default function CustomerOrderPage() {
     <div className="min-h-screen bg-muted/30 pb-6">
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted-foreground">ระบบสั่งอาหาร QR</p>
+          <p className="text-xs text-muted-foreground">TableOrder</p>
           <h1 className="font-bold text-primary">โต๊ะ {table.number} • โซน {table.zone}</h1>
         </div>
         <Sheet>
