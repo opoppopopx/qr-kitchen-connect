@@ -208,9 +208,19 @@ export default function ReservationsPage() {
           <div className="flex flex-col items-center gap-2">
             {qrValue
               ? <QRCodeSVG value={qrValue} size={220} includeMargin />
-              : <p className="text-sm text-center text-muted-foreground">กรุณาตั้งค่าพร้อมเพย์ของร้านก่อน</p>}
+              : <p className="text-sm text-center text-muted-foreground">
+                  ยังไม่ได้ตั้งค่าพร้อมเพย์ — รับเงินช่องทางอื่นแล้วกดยืนยันได้เลย
+                </p>}
             {settings?.account_name && <p className="text-sm font-medium">{settings.account_name}</p>}
+            {qrRow?.status === "pending" && (
+              <Button className="w-full mt-1" onClick={() => {
+                const r = qrRow; setQrRow(null); setRef(r.payment_ref ?? ""); setConfirmRow(r);
+              }}>
+                <Check className="h-4 w-4 mr-1" /> ยืนยันโอนแล้ว
+              </Button>
+            )}
           </div>
+
         </DialogContent>
       </Dialog>
 
