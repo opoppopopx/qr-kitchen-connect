@@ -7,7 +7,7 @@ export function getPublicBaseUrl(): string {
 
   const { origin, hostname, protocol, port } = window.location;
 
-  // ลิงก์ preview ของ Lovable เปิดได้เฉพาะเจ้าของโปรเจกต์ -> ใช้โดเมนสาธารณะแทน
+  // ลิงก์ preview เปิดได้เฉพาะเจ้าของโปรเจกต์ -> ใช้โดเมนสาธารณะแทน
   if (hostname.includes("id-preview--")) {
     return `${protocol}//${hostname.replace(/^id-preview--/, "")}`;
   }

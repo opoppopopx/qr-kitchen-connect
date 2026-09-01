@@ -42,7 +42,7 @@ export default function QRCodesPage() {
             <Globe className="h-4 w-4 text-primary" /> โดเมนสำหรับลูกค้า (ใช้สแกนจากเครื่องอื่น)
           </p>
           <p className="text-xs text-muted-foreground">
-            ใส่โดเมนที่เผยแพร่แล้ว เช่น https://ชื่อร้าน.lovable.app เพื่อให้มือถือลูกค้าเปิดได้ทุกเครื่อง
+            ใส่โดเมนที่เผยแพร่แล้ว เช่น https://ชื่อร้าน.com เพื่อให้มือถือลูกค้าเปิดได้ทุกเครื่อง
           </p>
           <div className="flex gap-2">
             <Input placeholder={base} value={draft} onChange={e => setDraft(e.target.value)} />

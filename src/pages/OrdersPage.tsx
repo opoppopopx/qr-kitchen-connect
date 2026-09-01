@@ -55,7 +55,7 @@ export default function OrdersPage() {
     const html = `<html><head><title>ใบเสร็จ #${order.order_no}</title>
       <style>body{font-family:sans-serif;padding:16px;max-width:320px}h2{text-align:center}table{width:100%;font-size:14px}td{padding:4px 0}
       .total{border-top:1px dashed #000;font-weight:bold}</style></head><body>
-      <h2>🍊 ใบเสร็จรับเงิน</h2>
+      <h2>TableOrder<br/><span style="font-size:14px">ใบเสร็จรับเงิน</span></h2>
       <p>เลขที่ #${order.order_no}<br/>โต๊ะ ${table?.number ?? '-'}<br/>${new Date(order.created_at).toLocaleString('th-TH')}</p>
       <table>${rows}<tr class="total"><td>รวมทั้งสิ้น</td><td style="text-align:right">฿${Number(order.total_amount).toLocaleString()}</td></tr></table>
       <p>การชำระเงิน: ${paid ? (paid.method === 'cash' ? 'เงินสด' : 'QR Code') : 'ยังไม่ชำระ'}</p>
