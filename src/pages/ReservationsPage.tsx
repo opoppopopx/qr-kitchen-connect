@@ -151,15 +151,18 @@ export default function ReservationsPage() {
                   </span>
                 </div>
 
+                {r.payment_ref && <p className="text-xs text-muted-foreground">อ้างอิงการโอน: {r.payment_ref}</p>}
+
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => setQrRow(r)}>
                     <QrCode className="h-3 w-3 mr-1" /> QR โอน
                   </Button>
                   {r.status === "pending" && (
-                    <Button size="sm" onClick={() => setStatus(r, "confirmed")}>
-                      <Check className="h-3 w-3 mr-1" /> ยืนยันได้รับเงิน
+                    <Button size="sm" onClick={() => { setConfirmRow(r); setRef(r.payment_ref ?? ""); }}>
+                      <Check className="h-3 w-3 mr-1" /> ยืนยันโอนแล้ว
                     </Button>
                   )}
+
                   {r.status === "confirmed" && (
                     <Button size="sm" onClick={() => setStatus(r, "seated")}>ลูกค้ามาถึงแล้ว</Button>
                   )}
