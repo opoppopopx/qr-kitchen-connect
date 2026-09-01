@@ -30,13 +30,17 @@ const callStaffFn = async (body: Record<string, unknown>) => {
 };
 
 export default function StaffPage() {
-  const { user } = useAuth();
+  const { user, role: myRole } = useAuth();
+  const isAdmin = myRole === "admin";
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ username: "", password: "", full_name: "", phone: "", salary: "", role: "waiter" as AppRole });
   const [salaryEdit, setSalaryEdit] = useState<string | null>(null);
   const [salaryInput, setSalaryInput] = useState("");
+  const [pwTarget, setPwTarget] = useState<StaffMember | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwValue2, setPwValue2] = useState("");
 
   const load = useCallback(async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
@@ -81,12 +85,18 @@ export default function StaffPage() {
     await load();
   };
 
-  const resetPassword = async (s: StaffMember) => {
-    const password = window.prompt(`ตั้งรหัสผ่านใหม่สำหรับ ${s.username}`);
-    if (!password) return;
-    const { error } = await callStaffFn({ action: "set_password", user_id: s.id, password });
-    if (error) toast.error(error); else toast.success("เปลี่ยนรหัสผ่านแล้ว");
+  const resetPassword = async () => {
+    if (!pwTarget) return;
+    if (pwValue.length < 6) { toast.error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"); return; }
+    if (pwValue !== pwValue2) { toast.error("รหัสผ่านยืนยันไม่ตรงกัน"); return; }
+    setBusy(true);
+    const { error } = await callStaffFn({ action: "set_password", user_id: pwTarget.id, password: pwValue });
+    setBusy(false);
+    if (error) { toast.error(error); return; }
+    toast.success(`เปลี่ยนรหัสผ่านของ @${pwTarget.username} แล้ว`);
+    setPwTarget(null); setPwValue(""); setPwValue2("");
   };
+
 
   const removeStaff = async (s: StaffMember) => {
     if (!window.confirm(`ลบพนักงาน ${s.full_name || s.username}?`)) return;
@@ -193,9 +203,12 @@ export default function StaffPage() {
                 <Button size="sm" variant={s.active ? "outline" : "default"} className="flex-1" onClick={() => toggleActive(s)}>
                   {s.active ? "ปิดการใช้งาน" : "เปิดการใช้งาน"}
                 </Button>
-                <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => resetPassword(s)}>
-                  <KeyRound className="h-4 w-4" />
-                </Button>
+                {isAdmin && (
+                  <Button size="icon" variant="outline" className="h-9 w-9" title="เปลี่ยนรหัสผ่าน"
+                    onClick={() => { setPwTarget(s); setPwValue(""); setPwValue2(""); }}>
+                    <KeyRound className="h-4 w-4" />
+                  </Button>
+                )}
                 {s.id !== user?.id && (
                   <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive" onClick={() => removeStaff(s)}>
                     <Trash2 className="h-4 w-4" />
@@ -209,6 +222,30 @@ export default function StaffPage() {
           <p className="col-span-full text-center text-muted-foreground py-8">ยังไม่มีพนักงานในระบบ</p>
         )}
       </div>
+
+      {/* Admin-only: change any staff password */}
+      <Dialog open={!!pwTarget} onOpenChange={o => { if (!o) setPwTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>เปลี่ยนรหัสผ่าน — @{pwTarget?.username}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>รหัสผ่านใหม่</Label>
+              <Input type="password" value={pwValue} onChange={e => setPwValue(e.target.value)} placeholder="อย่างน้อย 6 ตัวอักษร" />
+            </div>
+            <div className="space-y-1">
+              <Label>ยืนยันรหัสผ่านใหม่</Label>
+              <Input type="password" value={pwValue2} onChange={e => setPwValue2(e.target.value)} />
+            </div>
+            <p className="text-xs text-muted-foreground">เฉพาะแอดมินเท่านั้นที่เปลี่ยนรหัสผ่านของพนักงานได้</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={resetPassword} disabled={busy}>บันทึกรหัสผ่านใหม่</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }

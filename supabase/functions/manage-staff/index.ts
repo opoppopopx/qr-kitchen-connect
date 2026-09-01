@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
     const bootstrap = (staffCount ?? 0) === 0 && action === "create";
 
     let callerId = "";
+    let callerRole = "";
     if (!bootstrap) {
       const authHeader = req.headers.get("Authorization") ?? "";
       const token = authHeader.replace("Bearer ", "");
@@ -43,7 +44,14 @@ Deno.serve(async (req) => {
         .in("role", ["admin", "manager"])
         .limit(1);
       if (!bossRoles || bossRoles.length === 0) return json({ error: "forbidden" }, 403);
+      callerRole = String(bossRoles[0].role);
+
+      // Only admins may change other people's passwords
+      if (action === "set_password" && callerRole !== "admin") {
+        return json({ error: "เฉพาะแอดมินเท่านั้นที่แก้ไขรหัสผ่านได้" }, 403);
+      }
     }
+
 
 
     if (action === "create") {
