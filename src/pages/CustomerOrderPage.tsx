@@ -10,7 +10,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import type { CartItem, Product } from "@/types/restaurant";
+import { supabase } from "@/integrations/supabase/client";
+import { promptPayPayload } from "@/lib/promptpay";
+import type { CartItem, Product, RestaurantSettings } from "@/types/restaurant";
 import { orderStatusLabels } from "@/types/restaurant";
 
 export default function CustomerOrderPage() {
@@ -21,7 +23,15 @@ export default function CustomerOrderPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [payDismissed, setPayDismissed] = useState(false);
   const [qrPay, setQrPay] = useState(false);
+  const [qrAmount, setQrAmount] = useState(0);
+  const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    supabase.from("restaurant_settings").select("*").limit(1).maybeSingle()
+      .then(({ data }) => { if (data) setSettings(data as RestaurantSettings); });
+  }, []);
+
 
   const table = tables.find(t => t.id === tableId);
   const myOrders = useMemo(
