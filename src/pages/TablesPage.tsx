@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { QrCode, Send } from "lucide-react";
 import { MenuPicker } from "@/components/MenuPicker";
 import type { CartItem, RestaurantTable } from "@/types/restaurant";
+import { tableOrderUrl } from "@/lib/publicUrl";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   available: { label: 'ว่าง', color: 'bg-green-100 text-green-800 border-green-300' },
