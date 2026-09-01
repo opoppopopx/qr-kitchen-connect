@@ -30,7 +30,10 @@ export default function ReservationsPage() {
   const [items, setItems] = useState<ReservationItem[]>([]);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [qrRow, setQrRow] = useState<Reservation | null>(null);
+  const [confirmRow, setConfirmRow] = useState<Reservation | null>(null);
+  const [ref, setRef] = useState("");
   const [saving, setSaving] = useState(false);
+
 
   const load = useCallback(async () => {
     const [r, i, s] = await Promise.all([
@@ -54,10 +57,26 @@ export default function ReservationsPage() {
   }, [load]);
 
   const setStatus = async (row: Reservation, status: ReservationStatus) => {
-    await supabase.from("reservations").update({ status }).eq("id", row.id);
+    const { error } = await supabase.from("reservations").update({ status }).eq("id", row.id);
+    if (error) { toast.error("อัปเดตไม่สำเร็จ: " + error.message); return; }
     toast.success(`อัปเดตการจอง ${row.code} เป็น "${reservationStatusLabels[status]}"`);
     load();
   };
+
+  const confirmTransfer = async () => {
+    if (!confirmRow) return;
+    setSaving(true);
+    const { error } = await supabase.from("reservations")
+      .update({ status: "confirmed", payment_ref: ref.trim() })
+      .eq("id", confirmRow.id);
+    setSaving(false);
+    if (error) { toast.error("ยืนยันไม่สำเร็จ: " + error.message); return; }
+    toast.success(`ยืนยันการโอนของ #${confirmRow.code} แล้ว`);
+    setConfirmRow(null);
+    setRef("");
+    load();
+  };
+
 
   const saveSettings = async () => {
     if (!settings) return;
@@ -151,15 +170,18 @@ export default function ReservationsPage() {
                   </span>
                 </div>
 
+                {r.payment_ref && <p className="text-xs text-muted-foreground">อ้างอิงการโอน: {r.payment_ref}</p>}
+
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => setQrRow(r)}>
                     <QrCode className="h-3 w-3 mr-1" /> QR โอน
                   </Button>
                   {r.status === "pending" && (
-                    <Button size="sm" onClick={() => setStatus(r, "confirmed")}>
-                      <Check className="h-3 w-3 mr-1" /> ยืนยันได้รับเงิน
+                    <Button size="sm" onClick={() => { setConfirmRow(r); setRef(r.payment_ref ?? ""); }}>
+                      <Check className="h-3 w-3 mr-1" /> ยืนยันโอนแล้ว
                     </Button>
                   )}
+
                   {r.status === "confirmed" && (
                     <Button size="sm" onClick={() => setStatus(r, "seated")}>ลูกค้ามาถึงแล้ว</Button>
                   )}
@@ -191,6 +213,28 @@ export default function ReservationsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!confirmRow} onOpenChange={o => !o && setConfirmRow(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>ยืนยันการโอนเงิน #{confirmRow?.code}</DialogTitle>
+            <DialogDescription>
+              {confirmRow?.name} • ยอด ฿{Number(confirmRow?.total_due ?? 0).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>เลขอ้างอิง / หมายเหตุการโอน (ไม่บังคับ)</Label>
+            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder="เช่น 4 หลักท้ายสลิป หรือเวลาโอน" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setConfirmRow(null)}>ปิด</Button>
+            <Button onClick={confirmTransfer} disabled={saving}>
+              <Check className="h-4 w-4 mr-1" /> {saving ? "กำลังบันทึก..." : "ยืนยันได้รับเงิน"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
