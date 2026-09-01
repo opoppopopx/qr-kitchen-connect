@@ -272,6 +272,49 @@ export default function CustomerOrderPage() {
           </Card>
         )}
       </div>
+
+      {/* Payment popup after staff marks order as served */}
+      <Dialog
+        open={payOpen}
+        onOpenChange={o => { if (!o) { setPayOpen(false); setPayDismissed(true); } }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-primary" /> เสิร์ฟครบแล้ว — ชำระเงิน
+            </DialogTitle>
+            <DialogDescription>
+              โต๊ะ {table.number} • ยอดที่ต้องชำระ ฿{payTotal.toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+
+          {qrPay ? (
+            <div className="flex flex-col items-center gap-3">
+              <QRCodeSVG value={qrPayload} size={200} includeMargin />
+              <p className="text-sm text-center text-muted-foreground">
+                สแกน QR เพื่อชำระเงิน ฿{payTotal.toLocaleString()} <br />
+                เมื่อชำระแล้วพนักงานจะกดยืนยันการชำระเงินให้
+              </p>
+              <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); }}>
+                ปิดหน้าต่าง
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Button className="w-full" size="lg" onClick={() => pay('qr_code', servedUnpaid)}>
+                <QrCode className="h-4 w-4 mr-2" /> ชำระด้วย QR Code
+              </Button>
+              <Button variant="outline" className="w-full" size="lg" onClick={() => pay('cash', servedUnpaid)}>
+                <Banknote className="h-4 w-4 mr-2" /> ชำระด้วยเงินสด
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                หรือไปชำระที่พนักงาน พนักงานสามารถออก QR ให้สแกนได้เช่นกัน
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 }
