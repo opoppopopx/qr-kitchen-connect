@@ -1,7 +1,11 @@
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, ShoppingCart, UtensilsCrossed, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DollarSign, ShoppingCart, UtensilsCrossed, Clock, CalendarRange, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { orderStatusLabels } from "@/types/restaurant";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -11,26 +15,60 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-destructive/10 text-destructive",
 };
 
-const statusLabels: Record<string, string> = {
-  pending: "รอรับออร์เดอร์",
-  preparing: "กำลังทำ",
-  ready: "ทำเสร็จแล้ว",
-  served: "เสิร์ฟแล้ว",
-  cancelled: "ยกเลิก",
+const playBeep = () => {
+  try {
+    const Ctx = window.AudioContext ?? (window as any).webkitAudioContext;
+    const ctx = new Ctx();
+    [0, 0.2].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.001, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.18);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.2);
+    });
+    setTimeout(() => ctx.close(), 800);
+  } catch {
+    /* ignore audio errors */
+  }
 };
 
 export default function Dashboard() {
-  const { orders, tables, todaySales, todayOrderCount, getProductById, getTableById } = useRestaurant();
+  const {
+    orders, tables, todaySales, todayOrderCount, todayItemCount,
+    yearSales, yearOrderCount, getProductById, getTableById, onNewOrder,
+  } = useRestaurant();
+  const [soundOn, setSoundOn] = useState(true);
+  const soundRef = useRef(soundOn);
+  soundRef.current = soundOn;
+
+  useEffect(() => {
+    const off = onNewOrder(({ tableId }) => {
+      const table = tables.find(t => t.id === tableId);
+      toast.success(`ออร์เดอร์ใหม่จากโต๊ะ ${table?.number ?? "-"} 🔔`);
+      if (soundRef.current) playBeep();
+    });
+    return off;
+  }, [onNewOrder, tables]);
 
   const occupiedTables = tables.filter(t => t.status === 'occupied').length;
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing');
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">แดชบอร์ด</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">แดชบอร์ด</h2>
+        <Button size="sm" variant="outline" onClick={() => setSoundOn(v => !v)}>
+          {soundOn ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
+          {soundOn ? "เสียงแจ้งเตือน: เปิด" : "เสียงแจ้งเตือน: ปิด"}
+        </Button>
+      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">ยอดขายวันนี้</CardTitle>
@@ -38,6 +76,17 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">฿{todaySales.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">{todayItemCount} รายการอาหาร</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">ยอดขายปีนี้</CardTitle>
+            <CalendarRange className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">฿{yearSales.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">{yearOrderCount} ออร์เดอร์</p>
           </CardContent>
         </Card>
         <Card>
@@ -69,11 +118,33 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Table overview */}
+      <Card>
+        <CardHeader><CardTitle>ภาพรวมโต๊ะอาหาร</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-10 gap-2">
+            {tables.map(t => (
+              <div
+                key={t.id}
+                className={`rounded-lg border p-2 text-center text-sm ${
+                  t.status === 'occupied' ? 'bg-primary/10 border-primary/40 text-primary'
+                  : t.status === 'reserved' ? 'bg-yellow-100 border-yellow-300 text-yellow-800'
+                  : 'bg-muted'
+                }`}
+              >
+                <div className="font-bold">{t.number}</div>
+                <div className="text-[10px]">
+                  {t.status === 'occupied' ? 'เปิดอยู่' : t.status === 'reserved' ? 'จอง' : 'ว่าง'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recent Orders */}
       <Card>
-        <CardHeader>
-          <CardTitle>ออร์เดอร์ล่าสุด</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>ออร์เดอร์ล่าสุด</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3">
             {orders.slice(0, 10).map(order => {
@@ -92,8 +163,8 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold">฿{order.total_amount}</span>
-                    <Badge className={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
+                    <span className="font-semibold">฿{Number(order.total_amount).toLocaleString()}</span>
+                    <Badge className={statusColors[order.status]}>{orderStatusLabels[order.status]}</Badge>
                   </div>
                 </div>
               );

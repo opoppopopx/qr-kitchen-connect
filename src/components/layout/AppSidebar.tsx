@@ -1,36 +1,26 @@
-import {
-  LayoutDashboard, ClipboardList, UtensilsCrossed, ChefHat, BookOpen, Users, UserCog
-} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
-
-const adminItems = [
-  { title: "แดชบอร์ด", url: "/", icon: LayoutDashboard },
-  { title: "ออร์เดอร์", url: "/orders", icon: ClipboardList },
-  { title: "โต๊ะอาหาร", url: "/tables", icon: UtensilsCrossed },
-  { title: "ห้องครัว", url: "/kitchen", icon: ChefHat },
-  { title: "เมนูอาหาร", url: "/menu", icon: BookOpen },
-  { title: "ลูกค้า", url: "/customer", icon: Users },
-  { title: "จัดการพนักงาน", url: "/staff", icon: UserCog },
-];
+import { navItems } from "@/lib/permissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { role } = useAuth();
+
+  const items = navItems.filter(i => role && i.roles.includes(role));
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>
-            {!collapsed && "เมนูหลัก"}
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && "เมนูหลัก"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
