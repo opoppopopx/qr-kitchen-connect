@@ -78,15 +78,25 @@ export default function CustomerOrderPage() {
     toast.success("ส่งออร์เดอร์ไปที่ครัวแล้ว 🎉");
   };
 
-  const pay = async (method: 'cash' | 'qr_code') => {
-    const pending = myOrders.filter(o => o.status !== 'cancelled');
+  const pay = async (method: 'cash' | 'qr_code', targets = myOrders) => {
+    const pending = targets.filter(o => o.status !== 'cancelled' && !payments.some(p => p.order_id === o.id));
     if (!pending.length) {
-      toast.error("ยังไม่มีออร์เดอร์");
+      toast.error("ไม่มีรายการที่ต้องชำระ");
       return;
     }
     for (const o of pending) await requestPayment(o.id, method, Number(o.total_amount));
-    toast.success(method === 'cash' ? "แจ้งชำระเงินสดแล้ว พนักงานจะมาที่โต๊ะ" : "แจ้งชำระผ่าน QR แล้ว");
+    if (method === 'cash') {
+      toast.success("แจ้งชำระเงินสดแล้ว พนักงานจะมาที่โต๊ะ");
+      setPayOpen(false);
+      setPayDismissed(true);
+    } else {
+      toast.success("แจ้งชำระผ่าน QR แล้ว กรุณาสแกนเพื่อชำระเงิน");
+      setQrPay(true);
+    }
   };
+
+  const qrPayload = `PAYMENT|table:${table?.number ?? '-'}|amount:${payTotal || unpaidTotal}|orders:${(servedUnpaid.length ? servedUnpaid : myOrders).map(o => o.order_no).join(',')}`;
+
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">กำลังโหลดเมนู...</div>;
