@@ -226,6 +226,40 @@ export default function OrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR for customer to scan and pay at the counter */}
+      <Dialog open={!!qrOrder} onOpenChange={o => !o && setQrOrder(null)}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-center">QR ชำระเงิน — #{qrOrder?.order_no}</DialogTitle>
+            <DialogDescription className="text-center">
+              โต๊ะ {qrOrder ? getTableById(qrOrder.table_id)?.number ?? '-' : '-'} • ยอด ฿{Number(qrOrder?.total_amount ?? 0).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3">
+            {qrOrder && (
+              <QRCodeSVG
+                value={`PAYMENT|order:${qrOrder.order_no}|table:${getTableById(qrOrder.table_id)?.number ?? '-'}|amount:${Number(qrOrder.total_amount)}`}
+                size={200}
+                includeMargin
+              />
+            )}
+            <p className="text-xs text-center text-muted-foreground">ให้ลูกค้าสแกนเพื่อชำระเงิน แล้วกดยืนยันการชำระเงิน</p>
+            <Button
+              className="w-full"
+              onClick={async () => {
+                if (!qrOrder) return;
+                await processPayment(qrOrder.id, 'qr_code');
+                toast.success("ยืนยันการชำระเงินแล้ว");
+                setQrOrder(null);
+              }}
+            >
+              ยืนยันชำระเงินแล้ว
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
