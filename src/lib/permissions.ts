@@ -1,6 +1,6 @@
 import { AppRole } from "@/types/restaurant";
 import {
-  LayoutDashboard, ClipboardList, UtensilsCrossed, ChefHat, BookOpen, Users, UserCog,
+  LayoutDashboard, ClipboardList, UtensilsCrossed, ChefHat, BookOpen, Users, UserCog, QrCode,
 } from "lucide-react";
 
 export interface NavItem {
@@ -16,11 +16,13 @@ export const navItems: NavItem[] = [
   { title: "แดชบอร์ด", url: "/", icon: LayoutDashboard, roles: ['admin', 'manager', 'cashier'] },
   { title: "ออร์เดอร์", url: "/orders", icon: ClipboardList, roles: ALL },
   { title: "โต๊ะอาหาร", url: "/tables", icon: UtensilsCrossed, roles: ['admin', 'manager', 'cashier', 'waiter'] },
+  { title: "QR โต๊ะ", url: "/qr", icon: QrCode, roles: ['admin', 'manager', 'cashier', 'waiter'] },
   { title: "ห้องครัว", url: "/kitchen", icon: ChefHat, roles: ['admin', 'manager', 'kitchen', 'waiter'] },
   { title: "เมนูอาหาร", url: "/menu", icon: BookOpen, roles: ['admin', 'manager', 'kitchen'] },
   { title: "ลูกค้าสมาชิก", url: "/customers", icon: Users, roles: ['admin', 'manager', 'cashier'] },
   { title: "จัดการพนักงาน", url: "/staff", icon: UserCog, roles: ['admin', 'manager'] },
 ];
+
 
 export const canAccess = (role: AppRole | null, path: string) => {
   if (!role) return false;

@@ -15,6 +15,7 @@ import CustomersPage from "./pages/CustomersPage";
 import StaffPage from "./pages/StaffPage";
 import LoginPage from "./pages/LoginPage";
 import CustomerOrderPage from "./pages/CustomerOrderPage";
+import QRCodesPage from "./pages/QRCodesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,8 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
               <Route path="/tables" element={<ProtectedRoute><TablesPage /></ProtectedRoute>} />
+              <Route path="/qr" element={<ProtectedRoute><QRCodesPage /></ProtectedRoute>} />
+
               <Route path="/kitchen" element={<ProtectedRoute><KitchenPage /></ProtectedRoute>} />
               <Route path="/menu" element={<ProtectedRoute><MenuManagementPage /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
