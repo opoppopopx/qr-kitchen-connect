@@ -308,23 +308,37 @@ export default function CustomerOrderPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BellRing className="h-5 w-5 text-primary" /> เสิร์ฟครบแล้ว — ชำระเงิน
+              {qrPay ? <><QrCode className="h-5 w-5 text-primary" /> สแกนจ่ายด้วย QR พร้อมเพย์</>
+                : <><BellRing className="h-5 w-5 text-primary" /> เสิร์ฟครบแล้ว — ชำระเงิน</>}
             </DialogTitle>
             <DialogDescription>
-              โต๊ะ {table.number} • ยอดที่ต้องชำระ ฿{payTotal.toLocaleString()}
+              โต๊ะ {table.number} • ยอดที่ต้องชำระ ฿{(qrPay ? qrAmountFinal : payTotal).toLocaleString()}
             </DialogDescription>
           </DialogHeader>
 
           {qrPay ? (
             <div className="flex flex-col items-center gap-3">
-              <QRCodeSVG value={qrPayload} size={200} includeMargin />
-              <p className="text-sm text-center text-muted-foreground">
-                สแกน QR เพื่อชำระเงิน ฿{payTotal.toLocaleString()} <br />
-                เมื่อชำระแล้วพนักงานจะกดยืนยันการชำระเงินให้
-              </p>
-              <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); }}>
-                ปิดหน้าต่าง
-              </Button>
+              {qrPayload ? (
+                <>
+                  <div className="rounded-xl border bg-card p-3">
+                    <QRCodeSVG value={qrPayload} size={220} includeMargin />
+                  </div>
+                  <p className="text-sm font-medium">
+                    พร้อมเพย์: {settings?.account_name || settings?.promptpay_id}
+                  </p>
+                  <p className="text-lg font-bold text-primary">฿{qrAmountFinal.toLocaleString()}</p>
+                  <p className="text-xs text-center text-muted-foreground">
+                    เปิดแอปธนาคาร → สแกน QR → ตรวจยอดแล้วโอน<br />
+                    เมื่อชำระแล้วพนักงานจะกดยืนยันการชำระเงินให้
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground">
+                  ร้านยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาแจ้งพนักงานเพื่อชำระเงินที่เคาน์เตอร์
+                </p>
+              )}
+              <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); setQrPay(false); }}>
+
             </div>
           ) : (
             <div className="space-y-2">
