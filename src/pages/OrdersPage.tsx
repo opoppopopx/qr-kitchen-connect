@@ -47,7 +47,7 @@ export default function OrdersPage() {
 
       <div className="grid gap-4">
         {filtered.map(order => {
-          const table = getTableById(order.tableId);
+          const table = getTableById(order.table_id);
           return (
             <Card key={order.id}>
               <CardHeader className="pb-3">
@@ -56,13 +56,13 @@ export default function OrdersPage() {
                   <Badge className={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(order.createdAt).toLocaleTimeString('th-TH')}
+                  {new Date(order.created_at).toLocaleTimeString('th-TH')}
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 mb-4">
                   {order.items.map(item => {
-                    const product = getProductById(item.productId);
+                    const product = getProductById(item.product_id);
                     return (
                       <div key={item.id} className="flex justify-between text-sm">
                         <span>{product?.image} {product?.name} x{item.quantity}</span>
@@ -72,7 +72,7 @@ export default function OrdersPage() {
                   })}
                   <div className="border-t pt-2 flex justify-between font-semibold">
                     <span>รวม</span>
-                    <span>฿{order.totalAmount}</span>
+                    <span>฿{order.total_amount}</span>
                   </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">

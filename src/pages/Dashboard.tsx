@@ -77,7 +77,7 @@ export default function Dashboard() {
         <CardContent>
           <div className="space-y-3">
             {orders.slice(0, 10).map(order => {
-              const table = getTableById(order.tableId);
+              const table = getTableById(order.table_id);
               return (
                 <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
                   <div className="flex items-center gap-3">
@@ -87,12 +87,12 @@ export default function Dashboard() {
                     <div>
                       <p className="font-medium">โต๊ะ {table?.number} • {order.items.length} รายการ</p>
                       <p className="text-sm text-muted-foreground">
-                        {order.items.map(i => getProductById(i.productId)?.name).join(', ')}
+                        {order.items.map(i => getProductById(i.product_id)?.name).join(', ')}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold">฿{order.totalAmount}</span>
+                    <span className="font-semibold">฿{order.total_amount}</span>
                     <Badge className={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
                   </div>
                 </div>

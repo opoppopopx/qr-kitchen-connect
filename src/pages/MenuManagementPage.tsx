@@ -9,7 +9,7 @@ export default function MenuManagementPage() {
   const { categories, products, toggleProductAvailability } = useRestaurant();
   const [selectedCat, setSelectedCat] = useState<string>("all");
 
-  const filtered = selectedCat === "all" ? products : products.filter(p => p.categoryId === selectedCat);
+  const filtered = selectedCat === "all" ? products : products.filter(p => p.category_id === selectedCat);
 
   return (
     <div className="space-y-6">
@@ -57,7 +57,7 @@ export default function MenuManagementPage() {
                     <span className="text-xs text-muted-foreground">เปิดขาย</span>
                     <Switch
                       checked={product.available}
-                      onCheckedChange={() => toggleProductAvailability(product.id)}
+                      onCheckedChange={() => toggleProductAvailability(product.id, !product.available)}
                     />
                   </div>
                 </div>

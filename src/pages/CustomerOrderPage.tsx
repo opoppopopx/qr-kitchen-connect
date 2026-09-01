@@ -17,7 +17,7 @@ export default function CustomerOrderPage() {
   const [selectedCat, setSelectedCat] = useState<string>(categories[0]?.id || "");
 
   const openTables = tables.filter(t => t.status === 'occupied');
-  const filteredProducts = products.filter(p => p.categoryId === selectedCat && p.available);
+  const filteredProducts = products.filter(p => p.category_id === selectedCat && p.available);
   const cartTotal = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
