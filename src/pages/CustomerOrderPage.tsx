@@ -4,18 +4,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useMemo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Trash2, Send, QrCode, Banknote } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Minus, Plus, ShoppingCart, Trash2, Send, QrCode, Banknote, BellRing } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import type { CartItem, Product } from "@/types/restaurant";
 import { orderStatusLabels } from "@/types/restaurant";
 
 export default function CustomerOrderPage() {
   const { tableId } = useParams();
-  const { tables, categories, products, orders, createOrder, requestPayment, loading } = useRestaurant();
+  const { tables, categories, products, orders, payments, createOrder, requestPayment, loading } = useRestaurant();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCat, setSelectedCat] = useState<string>("all");
+  const [payOpen, setPayOpen] = useState(false);
+  const [payDismissed, setPayDismissed] = useState(false);
+  const [qrPay, setQrPay] = useState(false);
 
   const table = tables.find(t => t.id === tableId);
   const myOrders = useMemo(
@@ -23,6 +28,19 @@ export default function CustomerOrderPage() {
     [orders, tableId],
   );
   const unpaidTotal = myOrders.reduce((s, o) => s + Number(o.total_amount), 0);
+
+  // Orders that were served but have no payment record yet
+  const servedUnpaid = useMemo(
+    () => myOrders.filter(o => o.status === 'served' && !payments.some(p => p.order_id === o.id)),
+    [myOrders, payments],
+  );
+  const payTotal = servedUnpaid.reduce((s, o) => s + Number(o.total_amount), 0);
+
+  useEffect(() => {
+    if (servedUnpaid.length > 0 && !payDismissed) setPayOpen(true);
+    if (servedUnpaid.length === 0) { setPayOpen(false); setPayDismissed(false); setQrPay(false); }
+  }, [servedUnpaid.length, payDismissed]);
+
 
   const addToCart = (product: Product) =>
     setCart(prev => {
