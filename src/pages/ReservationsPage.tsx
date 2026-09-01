@@ -210,6 +210,7 @@ export default function ReservationsPage() {
                 <p className="text-sm">{new Date(r.reserved_at).toLocaleString("th-TH")}</p>
                 <p className="text-sm flex items-center gap-1">
                   <Users className="h-3 w-3" /> {r.guests} คน{r.zone ? ` • โซน ${r.zone}` : ""}
+                  {r.table_id && getTableById(r.table_id) ? ` • โต๊ะ ${getTableById(r.table_id)!.number}` : ""}
                 </p>
                 {r.note && <p className="text-xs text-muted-foreground">หมายเหตุ: {r.note}</p>}
 
