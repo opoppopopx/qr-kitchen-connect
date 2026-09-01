@@ -213,6 +213,28 @@ export default function ReservationsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!confirmRow} onOpenChange={o => !o && setConfirmRow(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>ยืนยันการโอนเงิน #{confirmRow?.code}</DialogTitle>
+            <DialogDescription>
+              {confirmRow?.name} • ยอด ฿{Number(confirmRow?.total_due ?? 0).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>เลขอ้างอิง / หมายเหตุการโอน (ไม่บังคับ)</Label>
+            <Input value={ref} onChange={e => setRef(e.target.value)} placeholder="เช่น 4 หลักท้ายสลิป หรือเวลาโอน" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setConfirmRow(null)}>ปิด</Button>
+            <Button onClick={confirmTransfer} disabled={saving}>
+              <Check className="h-4 w-4 mr-1" /> {saving ? "กำลังบันทึก..." : "ยืนยันได้รับเงิน"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
