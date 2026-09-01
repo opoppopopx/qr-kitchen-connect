@@ -158,6 +158,33 @@ export type Database = {
           },
         ]
       }
+      password_change_logs: {
+        Row: {
+          changed_by_user_id: string | null
+          changed_by_username: string
+          created_at: string
+          id: string
+          target_user_id: string
+          target_username: string
+        }
+        Insert: {
+          changed_by_user_id?: string | null
+          changed_by_username?: string
+          created_at?: string
+          id?: string
+          target_user_id: string
+          target_username?: string
+        }
+        Update: {
+          changed_by_user_id?: string | null
+          changed_by_username?: string
+          created_at?: string
+          id?: string
+          target_user_id?: string
+          target_username?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
