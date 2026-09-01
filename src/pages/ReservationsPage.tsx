@@ -30,7 +30,10 @@ export default function ReservationsPage() {
   const [items, setItems] = useState<ReservationItem[]>([]);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [qrRow, setQrRow] = useState<Reservation | null>(null);
+  const [confirmRow, setConfirmRow] = useState<Reservation | null>(null);
+  const [ref, setRef] = useState("");
   const [saving, setSaving] = useState(false);
+
 
   const load = useCallback(async () => {
     const [r, i, s] = await Promise.all([
