@@ -16,6 +16,7 @@ import StaffPage from "./pages/StaffPage";
 import LoginPage from "./pages/LoginPage";
 import CustomerOrderPage from "./pages/CustomerOrderPage";
 import QRCodesPage from "./pages/QRCodesPage";
+import KitchenDisplayPage from "./pages/KitchenDisplayPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
