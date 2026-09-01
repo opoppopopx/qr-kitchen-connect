@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     if (action === "delete") {
       const userId = String(body.user_id ?? "");
       if (!userId) return json({ error: "ข้อมูลไม่ถูกต้อง" }, 400);
-      if (userId === userData.user.id) return json({ error: "ไม่สามารถลบบัญชีตัวเองได้" }, 400);
+      if (userId === callerId) return json({ error: "ไม่สามารถลบบัญชีตัวเองได้" }, 400);
       const { error } = await admin.auth.admin.deleteUser(userId);
       if (error) return json({ error: error.message }, 400);
       return json({ ok: true });
