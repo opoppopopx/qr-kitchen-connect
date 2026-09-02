@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Product } from "@/types/restaurant";
+import { useAuth } from "@/contexts/AuthContext";
+import { isImageUrl, uploadMenuImage } from "@/lib/menuImage";
+
 
 interface Draft {
   name: string; price: string; image: string; category_id: string; description: string; available: boolean;
@@ -20,12 +23,35 @@ const emptyDraft: Draft = { name: "", price: "", image: "🍲", category_id: "",
 
 export default function MenuManagementPage() {
   const { categories, products, toggleProductAvailability, addProduct, updateProduct, deleteProduct } = useRestaurant();
+  const { role } = useAuth();
+  const canUploadImage = role === "admin" || role === "manager";
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [selectedCat, setSelectedCat] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
 
   const filtered = selectedCat === "all" ? products : products.filter(p => p.category_id === selectedCat);
+
+  const pickImage = async (file?: File | null) => {
+    if (!file) return;
+    if (!canUploadImage) { toast.error("เฉพาะแอดมินและผู้จัดการเท่านั้นที่ใส่รูปได้"); return; }
+    if (!file.type.startsWith("image/")) { toast.error("กรุณาเลือกไฟล์รูปภาพ"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("ไฟล์ใหญ่เกิน 5MB"); return; }
+    setUploading(true);
+    try {
+      const url = await uploadMenuImage(file);
+      setDraft(d => ({ ...d, image: url }));
+      toast.success("อัปโหลดรูปแล้ว");
+    } catch {
+      toast.error("อัปโหลดรูปไม่สำเร็จ");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
 
   const openNew = () => {
     setEditId(null);
@@ -90,7 +116,17 @@ export default function MenuManagementPage() {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{product.image}</span>
+                  {isImageUrl(product.image) ? (
+                    <img
+                      src={product.image}
+                      alt={`รูปเมนู ${product.name}`}
+                      loading="lazy"
+                      className="h-14 w-14 rounded-md object-cover border"
+                    />
+                  ) : (
+                    <span className="text-3xl">{product.image}</span>
+                  )}
+
                   <div>
                     <h4 className="font-semibold">{product.name}</h4>
                     <p className="text-sm text-muted-foreground">{product.description}</p>
@@ -146,6 +182,40 @@ export default function MenuManagementPage() {
                 <Input value={draft.image} onChange={e => setDraft(d => ({ ...d, image: e.target.value }))} />
               </div>
             </div>
+
+            {canUploadImage && (
+              <div className="space-y-2">
+                <Label>รูปเมนู (ไม่บังคับ)</Label>
+                <div className="flex items-center gap-3">
+                  {isImageUrl(draft.image) && (
+                    <img
+                      src={draft.image}
+                      alt="ตัวอย่างรูปเมนู"
+                      className="h-16 w-16 rounded-md object-cover border"
+                    />
+                  )}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => pickImage(e.target.files?.[0])}
+                  />
+                  <Button type="button" variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                    {uploading
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> กำลังอัปโหลด...</>
+                      : <><Upload className="h-4 w-4 mr-2" /> ใส่รูปเมนู</>}
+                  </Button>
+                  {isImageUrl(draft.image) && (
+                    <Button type="button" variant="ghost" onClick={() => setDraft(d => ({ ...d, image: "🍲" }))}>
+                      ลบรูป
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">รองรับไฟล์รูปไม่เกิน 5MB — เมื่อใส่รูปแล้วระบบจะใช้รูปแทนอีโมจิ</p>
+              </div>
+            )}
+
             <div className="space-y-1">
               <Label>หมวดหมู่</Label>
               <Select value={draft.category_id} onValueChange={v => setDraft(d => ({ ...d, category_id: v }))}>
