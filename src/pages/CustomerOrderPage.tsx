@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { promptPayPayload } from "@/lib/promptpay";
 import type { CartItem, Product, RestaurantSettings } from "@/types/restaurant";
 import { orderStatusLabels } from "@/types/restaurant";
+import { ProductThumb } from "@/components/ProductThumb";
+
 
 export default function CustomerOrderPage() {
   const { tableId } = useParams();
