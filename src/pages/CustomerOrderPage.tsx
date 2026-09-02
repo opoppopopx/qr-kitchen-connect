@@ -168,7 +168,7 @@ export default function CustomerOrderPage() {
                 <div key={item.product.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{item.product.image}</span>
+                      <ProductThumb image={item.product.image} name={item.product.name} className="h-10 w-10" emojiClassName="text-xl" />
                       <div>
                         <p className="font-medium text-sm">{item.product.name}</p>
                         <p className="text-xs text-muted-foreground">฿{Number(item.product.price)}</p>
@@ -237,7 +237,7 @@ export default function CustomerOrderPage() {
             return (
               <Card key={product.id}>
                 <CardContent className="p-4 flex items-start gap-3">
-                  <span className="text-4xl">{product.image}</span>
+                  <ProductThumb image={product.image} name={product.name} className="h-16 w-16" emojiClassName="text-4xl" />
                   <div className="flex-1">
                     <h4 className="font-semibold">{product.name}</h4>
                     <p className="text-xs text-muted-foreground">{product.description}</p>

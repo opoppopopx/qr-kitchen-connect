@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import type { CartItem, Category, Product } from "@/types/restaurant";
+import { ProductThumb } from "@/components/ProductThumb";
+
 
 interface Props {
   categories: Category[];
@@ -48,7 +50,10 @@ export function MenuPicker({ categories, products, cart, setCart }: Props) {
         {list.map(p => (
           <Card key={p.id} className="cursor-pointer hover:border-primary" onClick={() => add(p)}>
             <CardContent className="p-3 text-center">
-              <div className="text-2xl">{p.image}</div>
+              <div className="flex justify-center">
+                <ProductThumb image={p.image} name={p.name} className="h-12 w-12" emojiClassName="text-2xl" />
+              </div>
+
               <p className="text-sm font-medium leading-tight">{p.name}</p>
               <p className="text-xs text-primary font-semibold">฿{Number(p.price)}</p>
             </CardContent>
