@@ -116,7 +116,17 @@ export default function MenuManagementPage() {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{product.image}</span>
+                  {isImageUrl(product.image) ? (
+                    <img
+                      src={product.image}
+                      alt={`รูปเมนู ${product.name}`}
+                      loading="lazy"
+                      className="h-14 w-14 rounded-md object-cover border"
+                    />
+                  ) : (
+                    <span className="text-3xl">{product.image}</span>
+                  )}
+
                   <div>
                     <h4 className="font-semibold">{product.name}</h4>
                     <p className="text-sm text-muted-foreground">{product.description}</p>
@@ -172,6 +182,40 @@ export default function MenuManagementPage() {
                 <Input value={draft.image} onChange={e => setDraft(d => ({ ...d, image: e.target.value }))} />
               </div>
             </div>
+
+            {canUploadImage && (
+              <div className="space-y-2">
+                <Label>รูปเมนู (ไม่บังคับ)</Label>
+                <div className="flex items-center gap-3">
+                  {isImageUrl(draft.image) && (
+                    <img
+                      src={draft.image}
+                      alt="ตัวอย่างรูปเมนู"
+                      className="h-16 w-16 rounded-md object-cover border"
+                    />
+                  )}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => pickImage(e.target.files?.[0])}
+                  />
+                  <Button type="button" variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                    {uploading
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> กำลังอัปโหลด...</>
+                      : <><Upload className="h-4 w-4 mr-2" /> ใส่รูปเมนู</>}
+                  </Button>
+                  {isImageUrl(draft.image) && (
+                    <Button type="button" variant="ghost" onClick={() => setDraft(d => ({ ...d, image: "🍲" }))}>
+                      ลบรูป
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">รองรับไฟล์รูปไม่เกิน 5MB — เมื่อใส่รูปแล้วระบบจะใช้รูปแทนอีโมจิ</p>
+              </div>
+            )}
+
             <div className="space-y-1">
               <Label>หมวดหมู่</Label>
               <Select value={draft.category_id} onValueChange={v => setDraft(d => ({ ...d, category_id: v }))}>
