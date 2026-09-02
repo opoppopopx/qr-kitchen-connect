@@ -64,13 +64,23 @@
 
 ใช้โครงสร้างฐานข้อมูล (Schema) ตามตาราง: Tables, Products, Orders, Orderitems และ Payments "
 
-## Development
+## เริ่มใช้งานแบบง่ายสุด (Windows / VS Code)
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+1. เปิดโฟลเดอร์โปรเจกต์ (โฟลเดอร์ที่มีไฟล์ `package.json`)
+2. **ดับเบิลคลิกไฟล์ `START.bat`** — สคริปต์จะติดตั้งแพ็กเกจให้เองครั้งแรก สร้าง `.env` จาก `.env.example` และเปิดเบราว์เซอร์ที่ http://localhost:8080 อัตโนมัติ
+3. หยุดเซิร์ฟเวอร์ด้วย `Ctrl + C` หรือปิดหน้าต่าง
+
+macOS / Linux: `./start.sh`
+
+ต้องติดตั้ง [Node.js LTS](https://nodejs.org) ก่อนครั้งแรกเท่านั้น
+
+## Development (คำสั่งแบบ manual)
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+npm install
+npm start        # เปิดเบราว์เซอร์ให้เอง
+# หรือ npm run dev
 ```
+
+เข้าสู่ระบบผู้ดูแล: `admin` / `admin1234`
+
