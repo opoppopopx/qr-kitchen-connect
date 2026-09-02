@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Product } from "@/types/restaurant";
+import { useAuth } from "@/contexts/AuthContext";
+import { isImageUrl, uploadMenuImage } from "@/lib/menuImage";
+
 
 interface Draft {
   name: string; price: string; image: string; category_id: string; description: string; available: boolean;
@@ -20,12 +23,35 @@ const emptyDraft: Draft = { name: "", price: "", image: "🍲", category_id: "",
 
 export default function MenuManagementPage() {
   const { categories, products, toggleProductAvailability, addProduct, updateProduct, deleteProduct } = useRestaurant();
+  const { role } = useAuth();
+  const canUploadImage = role === "admin" || role === "manager";
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [selectedCat, setSelectedCat] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
 
   const filtered = selectedCat === "all" ? products : products.filter(p => p.category_id === selectedCat);
+
+  const pickImage = async (file?: File | null) => {
+    if (!file) return;
+    if (!canUploadImage) { toast.error("เฉพาะแอดมินและผู้จัดการเท่านั้นที่ใส่รูปได้"); return; }
+    if (!file.type.startsWith("image/")) { toast.error("กรุณาเลือกไฟล์รูปภาพ"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("ไฟล์ใหญ่เกิน 5MB"); return; }
+    setUploading(true);
+    try {
+      const url = await uploadMenuImage(file);
+      setDraft(d => ({ ...d, image: url }));
+      toast.success("อัปโหลดรูปแล้ว");
+    } catch {
+      toast.error("อัปโหลดรูปไม่สำเร็จ");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
 
   const openNew = () => {
     setEditId(null);
