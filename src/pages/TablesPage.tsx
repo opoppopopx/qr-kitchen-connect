@@ -47,12 +47,14 @@ export default function TablesPage() {
     if (!seats || seats <= 0) { toast.error("กรุณากรอกจำนวนที่นั่ง"); return; }
     if (tables.some(t => t.number === number)) { toast.error(`มีโต๊ะหมายเลข ${number} อยู่แล้ว`); return; }
     setBusy(true);
-    const err = await addTable({ number, zone, seats });
+    const { error: err, table: created } = await addTable({ number, zone, seats });
     setBusy(false);
     if (err) { toast.error("เพิ่มโต๊ะไม่สำเร็จ: " + err); return; }
-    toast.success(`เพิ่มโต๊ะ ${number} (โซน ${zone}) แล้ว`);
+    toast.success(`เพิ่มโต๊ะ ${number} (โซน ${zone}) แล้ว — สร้าง QR ให้เลย`);
     setAddOpen(false);
     setForm({ number: "", zone, seats: "4" });
+    if (created) setQrTable(created);
+
   };
 
   const confirmDelete = async () => {
