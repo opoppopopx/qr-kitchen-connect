@@ -137,6 +137,11 @@ export default function TablesPage() {
                       <Button size="sm" variant="ghost" className="w-full" onClick={() => setQrTable(table)}>
                         <QrCode className="h-3 w-3 mr-1" /> QR โต๊ะ
                       </Button>
+                      {canManage && (
+                        <Button size="sm" variant="ghost" className="w-full text-destructive hover:bg-destructive/10" onClick={() => setDelTable(table)}>
+                          <Trash2 className="h-3 w-3 mr-1" /> ลบโต๊ะ
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
