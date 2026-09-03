@@ -20,7 +20,7 @@ interface RestaurantContextType {
   setTableStatus: (tableId: string, status: TableStatus) => Promise<void>;
   openTable: (tableId: string) => Promise<void>;
   closeTable: (tableId: string) => Promise<void>;
-  addTable: (t: { number: number; zone: string; seats: number }) => Promise<string | null>;
+  addTable: (t: { number: number; zone: string; seats: number }) => Promise<{ error: string | null; table: RestaurantTable | null }>;
   deleteTable: (tableId: string) => Promise<string | null>;
 
   toggleProductAvailability: (productId: string, available: boolean) => Promise<void>;
