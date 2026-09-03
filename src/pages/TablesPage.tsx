@@ -95,7 +95,15 @@ export default function TablesPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">โต๊ะอาหาร</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-2xl font-bold">โต๊ะอาหาร</h2>
+        {canManage && (
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> เพิ่มโต๊ะ
+          </Button>
+        )}
+      </div>
+
 
       {zones.map(zone => (
         <div key={zone}>
