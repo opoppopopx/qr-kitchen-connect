@@ -272,7 +272,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
 
   const value: RestaurantContextType = {
     tables, categories, products, orders, payments, customers, loading, refresh: fetchAll,
-    setTableStatus, openTable, closeTable,
+    setTableStatus, openTable, closeTable, addTable, deleteTable,
     toggleProductAvailability, addProduct, updateProduct, deleteProduct,
     createOrder, updateOrderStatus, setItemQuantity, setItemNote, addItemsToOrder,
     processPayment, requestPayment, addCustomer, deleteCustomer,
