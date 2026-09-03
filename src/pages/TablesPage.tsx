@@ -6,10 +6,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { QrCode, Send } from "lucide-react";
+import { QrCode, Send, Plus, Trash2 } from "lucide-react";
 import { MenuPicker } from "@/components/MenuPicker";
 import type { CartItem, RestaurantTable } from "@/types/restaurant";
 import { tableOrderUrl } from "@/lib/publicUrl";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   available: { label: 'ว่าง', color: 'bg-green-100 text-green-800 border-green-300' },
