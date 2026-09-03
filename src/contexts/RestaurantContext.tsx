@@ -145,10 +145,11 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const closeTable = useCallback((id: string) => setTableStatus(id, 'available'), [setTableStatus]);
 
   const addTable = useCallback(async (t: { number: number; zone: string; seats: number }) => {
-    const { error } = await supabase.from('tables').insert(t);
+    const { data, error } = await supabase.from('tables').insert(t).select().maybeSingle();
     await fetchAll();
-    return error ? error.message : null;
+    return { error: error ? error.message : null, table: (data as RestaurantTable | null) ?? null };
   }, [fetchAll]);
+
 
   const deleteTable = useCallback(async (tableId: string) => {
     const { error } = await supabase.from('tables').delete().eq('id', tableId);
