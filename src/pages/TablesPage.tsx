@@ -25,13 +25,48 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 };
 
 export default function TablesPage() {
-  const { tables, categories, products, orders, openTable, closeTable, setTableStatus, createOrder } = useRestaurant();
+  const { tables, categories, products, orders, openTable, closeTable, setTableStatus, createOrder, addTable, deleteTable } = useRestaurant();
+  const { role } = useAuth();
+  const canManage = role === 'admin' || role === 'manager';
   const [orderTable, setOrderTable] = useState<RestaurantTable | null>(null);
   const [qrTable, setQrTable] = useState<RestaurantTable | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [busy, setBusy] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState({ number: "", zone: "A", seats: "4" });
+  const [delTable, setDelTable] = useState<RestaurantTable | null>(null);
 
   const zones = [...new Set(tables.map(t => t.zone))].sort();
+
+  const submitNewTable = async () => {
+    const number = parseInt(form.number, 10);
+    const seats = parseInt(form.seats, 10);
+    const zone = form.zone.trim().toUpperCase();
+    if (!number || number <= 0) { toast.error("กรุณากรอกเลขโต๊ะให้ถูกต้อง"); return; }
+    if (!zone) { toast.error("กรุณากรอกโซน"); return; }
+    if (!seats || seats <= 0) { toast.error("กรุณากรอกจำนวนที่นั่ง"); return; }
+    if (tables.some(t => t.number === number)) { toast.error(`มีโต๊ะหมายเลข ${number} อยู่แล้ว`); return; }
+    setBusy(true);
+    const err = await addTable({ number, zone, seats });
+    setBusy(false);
+    if (err) { toast.error("เพิ่มโต๊ะไม่สำเร็จ: " + err); return; }
+    toast.success(`เพิ่มโต๊ะ ${number} (โซน ${zone}) แล้ว`);
+    setAddOpen(false);
+    setForm({ number: "", zone, seats: "4" });
+  };
+
+  const confirmDelete = async () => {
+    if (!delTable) return;
+    setBusy(true);
+    const err = await deleteTable(delTable.id);
+    setBusy(false);
+    if (err) {
+      toast.error("ลบโต๊ะไม่สำเร็จ — อาจมีออร์เดอร์หรือการจองผูกอยู่กับโต๊ะนี้");
+      return;
+    }
+    toast.success(`ลบโต๊ะ ${delTable.number} แล้ว`);
+    setDelTable(null);
+  };
 
   const startOrder = async (table: RestaurantTable) => {
     if (table.status !== 'occupied') await openTable(table.id);
