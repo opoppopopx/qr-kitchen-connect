@@ -20,6 +20,8 @@ interface RestaurantContextType {
   setTableStatus: (tableId: string, status: TableStatus) => Promise<void>;
   openTable: (tableId: string) => Promise<void>;
   closeTable: (tableId: string) => Promise<void>;
+  addTable: (t: { number: number; zone: string; seats: number }) => Promise<string | null>;
+  deleteTable: (tableId: string) => Promise<string | null>;
 
   toggleProductAvailability: (productId: string, available: boolean) => Promise<void>;
   addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
@@ -142,6 +144,18 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const openTable = useCallback((id: string) => setTableStatus(id, 'occupied'), [setTableStatus]);
   const closeTable = useCallback((id: string) => setTableStatus(id, 'available'), [setTableStatus]);
 
+  const addTable = useCallback(async (t: { number: number; zone: string; seats: number }) => {
+    const { error } = await supabase.from('tables').insert(t);
+    await fetchAll();
+    return error ? error.message : null;
+  }, [fetchAll]);
+
+  const deleteTable = useCallback(async (tableId: string) => {
+    const { error } = await supabase.from('tables').delete().eq('id', tableId);
+    await fetchAll();
+    return error ? error.message : null;
+  }, [fetchAll]);
+
   const toggleProductAvailability = useCallback(async (productId: string, available: boolean) => {
     await supabase.from('products').update({ available }).eq('id', productId);
     await fetchAll();
@@ -258,7 +272,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
 
   const value: RestaurantContextType = {
     tables, categories, products, orders, payments, customers, loading, refresh: fetchAll,
-    setTableStatus, openTable, closeTable,
+    setTableStatus, openTable, closeTable, addTable, deleteTable,
     toggleProductAvailability, addProduct, updateProduct, deleteProduct,
     createOrder, updateOrderStatus, setItemQuantity, setItemNote, addItemsToOrder,
     processPayment, requestPayment, addCustomer, deleteCustomer,

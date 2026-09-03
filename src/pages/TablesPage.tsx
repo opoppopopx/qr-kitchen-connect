@@ -6,10 +6,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { QrCode, Send } from "lucide-react";
+import { QrCode, Send, Plus, Trash2 } from "lucide-react";
 import { MenuPicker } from "@/components/MenuPicker";
 import type { CartItem, RestaurantTable } from "@/types/restaurant";
 import { tableOrderUrl } from "@/lib/publicUrl";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   available: { label: 'ว่าง', color: 'bg-green-100 text-green-800 border-green-300' },
@@ -18,13 +25,48 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 };
 
 export default function TablesPage() {
-  const { tables, categories, products, orders, openTable, closeTable, setTableStatus, createOrder } = useRestaurant();
+  const { tables, categories, products, orders, openTable, closeTable, setTableStatus, createOrder, addTable, deleteTable } = useRestaurant();
+  const { role } = useAuth();
+  const canManage = role === 'admin' || role === 'manager';
   const [orderTable, setOrderTable] = useState<RestaurantTable | null>(null);
   const [qrTable, setQrTable] = useState<RestaurantTable | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [busy, setBusy] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState({ number: "", zone: "A", seats: "4" });
+  const [delTable, setDelTable] = useState<RestaurantTable | null>(null);
 
   const zones = [...new Set(tables.map(t => t.zone))].sort();
+
+  const submitNewTable = async () => {
+    const number = parseInt(form.number, 10);
+    const seats = parseInt(form.seats, 10);
+    const zone = form.zone.trim().toUpperCase();
+    if (!number || number <= 0) { toast.error("กรุณากรอกเลขโต๊ะให้ถูกต้อง"); return; }
+    if (!zone) { toast.error("กรุณากรอกโซน"); return; }
+    if (!seats || seats <= 0) { toast.error("กรุณากรอกจำนวนที่นั่ง"); return; }
+    if (tables.some(t => t.number === number)) { toast.error(`มีโต๊ะหมายเลข ${number} อยู่แล้ว`); return; }
+    setBusy(true);
+    const err = await addTable({ number, zone, seats });
+    setBusy(false);
+    if (err) { toast.error("เพิ่มโต๊ะไม่สำเร็จ: " + err); return; }
+    toast.success(`เพิ่มโต๊ะ ${number} (โซน ${zone}) แล้ว`);
+    setAddOpen(false);
+    setForm({ number: "", zone, seats: "4" });
+  };
+
+  const confirmDelete = async () => {
+    if (!delTable) return;
+    setBusy(true);
+    const err = await deleteTable(delTable.id);
+    setBusy(false);
+    if (err) {
+      toast.error("ลบโต๊ะไม่สำเร็จ — อาจมีออร์เดอร์หรือการจองผูกอยู่กับโต๊ะนี้");
+      return;
+    }
+    toast.success(`ลบโต๊ะ ${delTable.number} แล้ว`);
+    setDelTable(null);
+  };
 
   const startOrder = async (table: RestaurantTable) => {
     if (table.status !== 'occupied') await openTable(table.id);
@@ -53,7 +95,15 @@ export default function TablesPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">โต๊ะอาหาร</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-2xl font-bold">โต๊ะอาหาร</h2>
+        {canManage && (
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> เพิ่มโต๊ะ
+          </Button>
+        )}
+      </div>
+
 
       {zones.map(zone => (
         <div key={zone}>
@@ -87,6 +137,11 @@ export default function TablesPage() {
                       <Button size="sm" variant="ghost" className="w-full" onClick={() => setQrTable(table)}>
                         <QrCode className="h-3 w-3 mr-1" /> QR โต๊ะ
                       </Button>
+                      {canManage && (
+                        <Button size="sm" variant="ghost" className="w-full text-destructive hover:bg-destructive/10" onClick={() => setDelTable(table)}>
+                          <Trash2 className="h-3 w-3 mr-1" /> ลบโต๊ะ
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -128,6 +183,58 @@ export default function TablesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add table dialog (admin/manager) */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>เพิ่มโต๊ะใหม่</DialogTitle>
+            <DialogDescription>ระบุเลขโต๊ะ โซน และจำนวนที่นั่ง</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="t-number">เลขโต๊ะ</Label>
+              <Input id="t-number" type="number" min={1} value={form.number}
+                onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="เช่น 19" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="t-zone">โซน</Label>
+              <Input id="t-zone" value={form.zone}
+                onChange={e => setForm(f => ({ ...f, zone: e.target.value }))} placeholder="A" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="t-seats">จำนวนที่นั่ง</Label>
+              <Input id="t-seats" type="number" min={1} value={form.seats}
+                onChange={e => setForm(f => ({ ...f, seats: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={submitNewTable} disabled={busy}>
+              <Plus className="h-4 w-4 mr-1" /> เพิ่มโต๊ะ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!delTable} onOpenChange={o => !o && setDelTable(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบโต๊ะ {delTable?.number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ลบแล้วกู้คืนไม่ได้ และ QR ของโต๊ะนี้จะใช้งานไม่ได้อีก
+              (ถ้าโต๊ะนี้มีออร์เดอร์หรือการจองอยู่ในระบบจะลบไม่ได้)
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={busy}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ลบโต๊ะ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
