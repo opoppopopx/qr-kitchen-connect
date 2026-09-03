@@ -144,6 +144,18 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const openTable = useCallback((id: string) => setTableStatus(id, 'occupied'), [setTableStatus]);
   const closeTable = useCallback((id: string) => setTableStatus(id, 'available'), [setTableStatus]);
 
+  const addTable = useCallback(async (t: { number: number; zone: string; seats: number }) => {
+    const { error } = await supabase.from('tables').insert(t);
+    await fetchAll();
+    return error ? error.message : null;
+  }, [fetchAll]);
+
+  const deleteTable = useCallback(async (tableId: string) => {
+    const { error } = await supabase.from('tables').delete().eq('id', tableId);
+    await fetchAll();
+    return error ? error.message : null;
+  }, [fetchAll]);
+
   const toggleProductAvailability = useCallback(async (productId: string, available: boolean) => {
     await supabase.from('products').update({ available }).eq('id', productId);
     await fetchAll();
