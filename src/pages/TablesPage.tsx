@@ -183,6 +183,58 @@ export default function TablesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add table dialog (admin/manager) */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>เพิ่มโต๊ะใหม่</DialogTitle>
+            <DialogDescription>ระบุเลขโต๊ะ โซน และจำนวนที่นั่ง</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="t-number">เลขโต๊ะ</Label>
+              <Input id="t-number" type="number" min={1} value={form.number}
+                onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="เช่น 19" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="t-zone">โซน</Label>
+              <Input id="t-zone" value={form.zone}
+                onChange={e => setForm(f => ({ ...f, zone: e.target.value }))} placeholder="A" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="t-seats">จำนวนที่นั่ง</Label>
+              <Input id="t-seats" type="number" min={1} value={form.seats}
+                onChange={e => setForm(f => ({ ...f, seats: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={submitNewTable} disabled={busy}>
+              <Plus className="h-4 w-4 mr-1" /> เพิ่มโต๊ะ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!delTable} onOpenChange={o => !o && setDelTable(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบโต๊ะ {delTable?.number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ลบแล้วกู้คืนไม่ได้ และ QR ของโต๊ะนี้จะใช้งานไม่ได้อีก
+              (ถ้าโต๊ะนี้มีออร์เดอร์หรือการจองอยู่ในระบบจะลบไม่ได้)
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={busy}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ลบโต๊ะ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
