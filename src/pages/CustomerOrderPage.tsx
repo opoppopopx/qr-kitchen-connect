@@ -1,0 +1,382 @@
+import { useParams } from "react-router-dom";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useEffect, useMemo, useState } from "react";
+import { Minus, Plus, ShoppingCart, Trash2, Send, QrCode, Banknote, BellRing } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { promptPayPayload } from "@/lib/promptpay";
+import type { CartItem, Product, RestaurantSettings } from "@/types/restaurant";
+import { orderStatusLabels } from "@/types/restaurant";
+import { ProductThumb } from "@/components/ProductThumb";
+import { SlipUpload } from "@/components/SlipUpload";
+import { useBranding } from "@/contexts/BrandingContext";
+
+
+export default function CustomerOrderPage() {
+  const { name: brandName, logoUrl: brandLogo } = useBranding();
+  const { tableId } = useParams();
+  const { tables, categories, products, orders, payments, createOrder, requestPayment, loading } = useRestaurant();
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedCat, setSelectedCat] = useState<string>("all");
+  const [payOpen, setPayOpen] = useState(false);
+  const [payDismissed, setPayDismissed] = useState(false);
+  const [qrPay, setQrPay] = useState(false);
+  const [qrAmount, setQrAmount] = useState(0);
+  const [qrOrderId, setQrOrderId] = useState<string | null>(null);
+  const [settings, setSettings] = useState<RestaurantSettings | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    supabase.from("restaurant_settings").select("*").limit(1).maybeSingle()
+      .then(({ data }) => { if (data) setSettings(data as RestaurantSettings); });
+  }, []);
+
+
+  const table = tables.find(t => t.id === tableId);
+  const myOrders = useMemo(
+    () => orders.filter(o => o.table_id === tableId && o.status !== 'cancelled'),
+    [orders, tableId],
+  );
+  const unpaidTotal = myOrders.reduce((s, o) => s + Number(o.total_amount), 0);
+
+  // Orders that were served but have no payment record yet
+  const servedUnpaid = useMemo(
+    () => myOrders.filter(o => o.status === 'served' && !payments.some(p => p.order_id === o.id)),
+    [myOrders, payments],
+  );
+  const payTotal = servedUnpaid.reduce((s, o) => s + Number(o.total_amount), 0);
+
+  useEffect(() => {
+    if (servedUnpaid.length > 0 && !payDismissed) setPayOpen(true);
+    if (servedUnpaid.length === 0 && !qrPay) { setPayOpen(false); setPayDismissed(false); }
+  }, [servedUnpaid.length, payDismissed, qrPay]);
+
+
+
+  const addToCart = (product: Product) =>
+    setCart(prev => {
+      const found = prev.find(i => i.product.id === product.id);
+      if (found) return prev.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+      return [...prev, { product, quantity: 1, note: "" }];
+    });
+  const setQty = (id: string, quantity: number) =>
+    setCart(prev => quantity <= 0
+      ? prev.filter(i => i.product.id !== id)
+      : prev.map(i => i.product.id === id ? { ...i, quantity } : i));
+  const setNote = (id: string, note: string) =>
+    setCart(prev => prev.map(i => i.product.id === id ? { ...i, note } : i));
+
+  const filteredProducts = products.filter(p => p.available && (selectedCat === "all" || p.category_id === selectedCat));
+  const cartTotal = cart.reduce((sum, i) => sum + Number(i.product.price) * i.quantity, 0);
+  const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
+
+  const submitOrder = async () => {
+    if (submitting) return;
+    if (!table) return;
+    if (table.status !== 'occupied') {
+      toast.error("โต๊ะนี้ยังไม่ได้เปิด กรุณาแจ้งพนักงาน");
+      return;
+    }
+    if (!cart.length) {
+      toast.error("กรุณาเลือกรายการอาหาร");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const id = await createOrder(table.id, cart, 'customer');
+      if (!id) {
+        toast.error("สั่งอาหารไม่สำเร็จ กรุณาแจ้งพนักงาน");
+        return;
+      }
+      setCart([]);
+      toast.success("ส่งออร์เดอร์ไปที่ครัวแล้ว 🎉");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+
+  const pay = async (method: 'cash' | 'qr_code', targets = myOrders) => {
+    const pending = targets.filter(o => o.status !== 'cancelled' && !payments.some(p => p.order_id === o.id));
+    if (!pending.length) {
+      toast.error("ไม่มีรายการที่ต้องชำระ");
+      return;
+    }
+    const amount = pending.reduce((s, o) => s + Number(o.total_amount), 0);
+    for (const o of pending) await requestPayment(o.id, method, Number(o.total_amount));
+    if (method === 'cash') {
+      toast.success("แจ้งชำระเงินสดแล้ว พนักงานจะมาที่โต๊ะ");
+      setPayOpen(false);
+      setPayDismissed(true);
+    } else {
+      setQrAmount(amount);
+      setQrOrderId(pending[0].id);
+      setQrPay(true);
+      setPayOpen(true);
+      setPayDismissed(false);
+      toast.success("สแกน QR พร้อมเพย์เพื่อชำระเงิน");
+    }
+  };
+
+  const qrAmountFinal = qrAmount || payTotal || unpaidTotal;
+  const qrPayload = settings?.promptpay_id
+    ? promptPayPayload(settings.promptpay_id, qrAmountFinal)
+    : "";
+
+
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">กำลังโหลดเมนู...</div>;
+  }
+
+  if (!table) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 text-center">
+        <div>
+          <p className="text-4xl mb-2">😕</p>
+          <p className="font-semibold">ไม่พบโต๊ะนี้</p>
+          <p className="text-sm text-muted-foreground">กรุณาสแกน QR ที่โต๊ะอีกครั้ง</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-muted/30 pb-6">
+      <header className="sticky top-0 z-10 bg-card border-b px-4 py-3 flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <img src={brandLogo} alt={`โลโก้ ${brandName}`} className="h-6 w-6 object-contain" />
+            <p className="text-xs text-muted-foreground">{brandName}</p>
+          </div>
+          <h1 className="font-bold text-primary">โต๊ะ {table.number} • โซน {table.zone}</h1>
+        </div>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button className="relative">
+              <ShoppingCart className="h-4 w-4 mr-2" /> ตะกร้า
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="flex flex-col w-full sm:max-w-md">
+            <SheetHeader><SheetTitle>ตะกร้าสินค้า</SheetTitle></SheetHeader>
+            <div className="flex-1 overflow-auto space-y-3 py-4">
+              {cart.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">ยังไม่มีรายการ</p>
+              ) : cart.map(item => (
+                <div key={item.product.id} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ProductThumb image={item.product.image} name={item.product.name} className="h-10 w-10" emojiClassName="text-xl" />
+                      <div>
+                        <p className="font-medium text-sm">{item.product.name}</p>
+                        <p className="text-xs text-muted-foreground">฿{Number(item.product.price)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(item.product.id, item.quantity - 1)}>
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                      <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(item.product.id, item.quantity + 1)}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setQty(item.product.id, 0)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Input
+                    className="h-8 text-sm"
+                    placeholder="คำขอพิเศษ เช่น ไม่ใส่ผัก เผ็ดน้อย"
+                    value={item.note ?? ""}
+                    onChange={e => setNote(item.product.id, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+            {cart.length > 0 && (
+              <SheetFooter className="border-t pt-4 flex-col gap-3">
+                <div className="flex justify-between w-full text-lg font-bold">
+                  <span>รวมทั้งหมด</span>
+                  <span className="text-primary">฿{cartTotal.toLocaleString()}</span>
+                </div>
+                <Button className="w-full" size="lg" onClick={submitOrder} disabled={submitting}>
+                  <Send className="h-4 w-4 mr-2" /> {submitting ? "กำลังส่ง..." : "ส่งออร์เดอร์"}
+                </Button>
+              </SheetFooter>
+            )}
+          </SheetContent>
+        </Sheet>
+      </header>
+
+      <div className="p-4 space-y-4">
+        {table.status !== 'occupied' && (
+          <Card className="border-destructive/40 bg-destructive/5">
+            <CardContent className="p-4 text-sm">
+              โต๊ะนี้ยังไม่ได้เปิดใช้งาน กรุณาแจ้งพนักงานเพื่อเปิดโต๊ะก่อนสั่งอาหาร
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Categories */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <Button size="sm" variant={selectedCat === "all" ? "default" : "outline"} onClick={() => setSelectedCat("all")}>ทั้งหมด</Button>
+          {categories.map(cat => (
+            <Button key={cat.id} size="sm" variant={selectedCat === cat.id ? "default" : "outline"} className="whitespace-nowrap" onClick={() => setSelectedCat(cat.id)}>
+              {cat.icon} {cat.name}
+            </Button>
+          ))}
+        </div>
+
+        {/* Products */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredProducts.map(product => {
+            const inCart = cart.find(i => i.product.id === product.id);
+            return (
+              <Card key={product.id}>
+                <CardContent className="p-4 flex items-start gap-3">
+                  <ProductThumb image={product.image} name={product.name} className="h-16 w-16" emojiClassName="text-4xl" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold">{product.name}</h4>
+                    <p className="text-xs text-muted-foreground">{product.description}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-primary font-bold text-lg">฿{Number(product.price)}</span>
+                      {inCart ? (
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(product.id, inCart.quantity - 1)}>
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-6 text-center text-sm font-medium">{inCart.quantity}</span>
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => addToCart(product)}>
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="sm" onClick={() => addToCart(product)} disabled={table.status !== 'occupied'}>
+                          <Plus className="h-3 w-3 mr-1" /> เพิ่ม
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+          {filteredProducts.length === 0 && (
+            <p className="col-span-full text-center text-muted-foreground py-8">ไม่มีเมนูในหมวดนี้</p>
+          )}
+        </div>
+
+        {/* My orders + payment */}
+        {myOrders.length > 0 && (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <h3 className="font-semibold">ออร์เดอร์ของโต๊ะนี้</h3>
+              {myOrders.map(o => (
+                <div key={o.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
+                  <span>#{o.order_no} • {o.items.length} รายการ</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{orderStatusLabels[o.status]}</Badge>
+                    <span className="font-semibold">฿{Number(o.total_amount).toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-between font-bold">
+                <span>ยอดรวม</span>
+                <span className="text-primary">฿{unpaidTotal.toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => pay('cash')}>
+                  <Banknote className="h-4 w-4 mr-2" /> ชำระเงินสด
+                </Button>
+                <Button onClick={() => pay('qr_code')}>
+                  <QrCode className="h-4 w-4 mr-2" /> ชำระ QR
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Payment popup after staff marks order as served */}
+      <Dialog
+        open={payOpen}
+        onOpenChange={o => { if (!o) { setPayOpen(false); setPayDismissed(true); } }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {qrPay ? <><QrCode className="h-5 w-5 text-primary" /> สแกนจ่ายด้วย QR พร้อมเพย์</>
+                : <><BellRing className="h-5 w-5 text-primary" /> เสิร์ฟครบแล้ว — ชำระเงิน</>}
+            </DialogTitle>
+            <DialogDescription>
+              โต๊ะ {table.number} • ยอดที่ต้องชำระ ฿{(qrPay ? qrAmountFinal : payTotal).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+
+          {qrPay ? (
+            <div className="flex flex-col items-center gap-3">
+              {qrPayload ? (
+                <>
+                  <div className="rounded-xl border bg-card p-3">
+                    <QRCodeSVG value={qrPayload} size={220} includeMargin />
+                  </div>
+                  <p className="text-sm font-medium">
+                    พร้อมเพย์: {settings?.account_name || settings?.promptpay_id}
+                  </p>
+                  <p className="text-lg font-bold text-primary">฿{qrAmountFinal.toLocaleString()}</p>
+                  <p className="text-xs text-center text-muted-foreground">
+                    เปิดแอปธนาคาร → สแกน QR → ตรวจยอดแล้วโอน<br />
+                    โอนแล้วแนบสลิปด้านล่าง ระบบจะแจ้งพนักงานให้ยืนยันทันที
+                  </p>
+                  {qrOrderId && (
+                    <SlipUpload
+                      kind="order"
+                      orderId={qrOrderId}
+                      amount={qrAmountFinal}
+                      defaultNote={`โต๊ะ ${table.number}`}
+                    />
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground">
+                  ร้านยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาแจ้งพนักงานเพื่อชำระเงินที่เคาน์เตอร์
+                </p>
+              )}
+              <Button variant="outline" className="w-full" onClick={() => { setPayOpen(false); setPayDismissed(true); setQrPay(false); }}>
+                ปิดหน้าต่าง
+              </Button>
+
+
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Button className="w-full" size="lg" onClick={() => pay('qr_code', servedUnpaid)}>
+                <QrCode className="h-4 w-4 mr-2" /> ชำระด้วย QR Code
+              </Button>
+              <Button variant="outline" className="w-full" size="lg" onClick={() => pay('cash', servedUnpaid)}>
+                <Banknote className="h-4 w-4 mr-2" /> ชำระด้วยเงินสด
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                หรือไปชำระที่พนักงาน พนักงานสามารถออก QR ให้สแกนได้เช่นกัน
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+
+}
