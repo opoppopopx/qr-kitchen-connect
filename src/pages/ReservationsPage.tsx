@@ -183,13 +183,21 @@ export default function ReservationsPage() {
   const saveSettings = async () => {
     if (!settings) return;
     setSaving(true);
-    const { error } = await supabase.from("restaurant_settings").update({
-      promptpay_id: settings.promptpay_id,
-      account_name: settings.account_name,
+    const payload = {
+      promptpay_id: settings.promptpay_id.trim(),
+      account_name: settings.account_name.trim(),
       deposit_amount: Number(settings.deposit_amount) || 0,
-    }).eq("id", settings.id);
+    };
+    const { data, error } = settings.id
+      ? await supabase.from("restaurant_settings").update(payload).eq("id", settings.id).select("*").maybeSingle()
+      : await supabase.from("restaurant_settings").insert(payload).select("*").maybeSingle();
     setSaving(false);
-    toast[error ? "error" : "success"](error ? "บันทึกไม่สำเร็จ" : "บันทึกการตั้งค่าแล้ว");
+    if (error || !data) {
+      toast.error("บันทึกไม่สำเร็จ" + (error ? `: ${error.message}` : ""));
+      return;
+    }
+    setSettings(data as RestaurantSettings);
+    toast.success("บันทึกการตั้งค่าแล้ว");
   };
 
   const bookingUrl = `${getPublicBaseUrl()}/book`;
