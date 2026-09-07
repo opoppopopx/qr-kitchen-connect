@@ -1,6 +1,6 @@
-import logo from "@/assets/logo.png";
+import { useBranding, DEFAULT_BRAND_NAME } from "@/contexts/BrandingContext";
 
-export const BRAND_NAME = "TableOrder";
+export const BRAND_NAME = DEFAULT_BRAND_NAME;
 
 interface BrandLogoProps {
   className?: string;
@@ -10,11 +10,13 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ className = "", size = 28, withName = true, subtitle }: BrandLogoProps) {
+  const { name, logoUrl } = useBranding();
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <img
-        src={logo}
-        alt={`โลโก้ ${BRAND_NAME}`}
+        src={logoUrl}
+        alt={`โลโก้ ${name}`}
         width={size}
         height={size}
         loading="lazy"
@@ -23,7 +25,7 @@ export function BrandLogo({ className = "", size = 28, withName = true, subtitle
       />
       {withName && (
         <span className="leading-tight">
-          <span className="block font-semibold text-primary">{BRAND_NAME}</span>
+          <span className="block font-semibold text-primary">{name}</span>
           {subtitle && <span className="block text-xs text-muted-foreground">{subtitle}</span>}
         </span>
       )}

@@ -1,6 +1,6 @@
 import { AppRole } from "@/types/restaurant";
 import {
-  LayoutDashboard, ClipboardList, UtensilsCrossed, ChefHat, BookOpen, Users, UserCog, QrCode, CalendarCheck,
+  LayoutDashboard, ClipboardList, UtensilsCrossed, ChefHat, BookOpen, Users, UserCog, QrCode, CalendarCheck, Store,
 } from "lucide-react";
 
 export interface NavItem {
@@ -23,6 +23,7 @@ export const navItems: NavItem[] = [
   { title: "เมนูอาหาร", url: "/menu", icon: BookOpen, roles: ['admin', 'manager'] },
   { title: "ลูกค้าสมาชิก", url: "/customers", icon: Users, roles: ['admin', 'manager', 'cashier'] },
   { title: "จัดการพนักงาน", url: "/staff", icon: UserCog, roles: ['admin', 'manager'] },
+  { title: "ตั้งค่าร้าน", url: "/settings", icon: Store, roles: ['admin', 'manager'] },
 ];
 
 

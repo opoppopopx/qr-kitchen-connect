@@ -144,3 +144,26 @@ export const reservationStatusLabels: Record<ReservationStatus, string> = {
   cancelled: 'ยกเลิก',
   seated: 'ลูกค้ามาถึงแล้ว',
 };
+
+export type PaymentSlipKind = 'order' | 'reservation';
+export type PaymentSlipStatus = 'pending' | 'verified' | 'rejected';
+
+export interface PaymentSlip {
+  id: string;
+  kind: PaymentSlipKind;
+  order_id: string | null;
+  reservation_id: string | null;
+  amount: number;
+  slip_hash: string;
+  storage_path: string;
+  note: string;
+  status: PaymentSlipStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export const slipStatusLabels: Record<PaymentSlipStatus, string> = {
+  pending: 'รอตรวจสอบสลิป',
+  verified: 'ตรวจสอบแล้ว เงินเข้าจริง',
+  rejected: 'สลิปไม่ถูกต้อง',
+};

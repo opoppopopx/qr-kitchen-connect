@@ -15,9 +15,12 @@ import { promptPayPayload } from "@/lib/promptpay";
 import type { CartItem, Product, RestaurantSettings } from "@/types/restaurant";
 import { orderStatusLabels } from "@/types/restaurant";
 import { ProductThumb } from "@/components/ProductThumb";
+import { SlipUpload } from "@/components/SlipUpload";
+import { useBranding } from "@/contexts/BrandingContext";
 
 
 export default function CustomerOrderPage() {
+  const { name: brandName, logoUrl: brandLogo } = useBranding();
   const { tableId } = useParams();
   const { tables, categories, products, orders, payments, createOrder, requestPayment, loading } = useRestaurant();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -26,6 +29,7 @@ export default function CustomerOrderPage() {
   const [payDismissed, setPayDismissed] = useState(false);
   const [qrPay, setQrPay] = useState(false);
   const [qrAmount, setQrAmount] = useState(0);
+  const [qrOrderId, setQrOrderId] = useState<string | null>(null);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -113,6 +117,7 @@ export default function CustomerOrderPage() {
       setPayDismissed(true);
     } else {
       setQrAmount(amount);
+      setQrOrderId(pending[0].id);
       setQrPay(true);
       setPayOpen(true);
       setPayDismissed(false);
@@ -147,7 +152,10 @@ export default function CustomerOrderPage() {
     <div className="min-h-screen bg-muted/30 pb-6">
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted-foreground">TableOrder</p>
+          <div className="flex items-center gap-2">
+            <img src={brandLogo} alt={`โลโก้ ${brandName}`} className="h-6 w-6 object-contain" />
+            <p className="text-xs text-muted-foreground">{brandName}</p>
+          </div>
           <h1 className="font-bold text-primary">โต๊ะ {table.number} • โซน {table.zone}</h1>
         </div>
         <Sheet>
@@ -331,8 +339,16 @@ export default function CustomerOrderPage() {
                   <p className="text-lg font-bold text-primary">฿{qrAmountFinal.toLocaleString()}</p>
                   <p className="text-xs text-center text-muted-foreground">
                     เปิดแอปธนาคาร → สแกน QR → ตรวจยอดแล้วโอน<br />
-                    เมื่อชำระแล้วพนักงานจะกดยืนยันการชำระเงินให้
+                    โอนแล้วแนบสลิปด้านล่าง ระบบจะแจ้งพนักงานให้ยืนยันทันที
                   </p>
+                  {qrOrderId && (
+                    <SlipUpload
+                      kind="order"
+                      orderId={qrOrderId}
+                      amount={qrAmountFinal}
+                      defaultNote={`โต๊ะ ${table.number}`}
+                    />
+                  )}
                 </>
               ) : (
                 <p className="text-sm text-center text-muted-foreground">

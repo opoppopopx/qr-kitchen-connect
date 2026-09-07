@@ -185,6 +185,63 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_slips: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          note: string
+          order_id: string | null
+          reservation_id: string | null
+          slip_hash: string
+          status: string
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          order_id?: string | null
+          reservation_id?: string | null
+          slip_hash: string
+          status?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          order_id?: string | null
+          reservation_id?: string | null
+          slip_hash?: string
+          status?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_slips_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_slips_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -410,7 +467,9 @@ export type Database = {
           created_at: string
           deposit_amount: number
           id: string
+          logo_url: string
           promptpay_id: string
+          restaurant_name: string
           updated_at: string
         }
         Insert: {
@@ -418,7 +477,9 @@ export type Database = {
           created_at?: string
           deposit_amount?: number
           id?: string
+          logo_url?: string
           promptpay_id?: string
+          restaurant_name?: string
           updated_at?: string
         }
         Update: {
@@ -426,7 +487,9 @@ export type Database = {
           created_at?: string
           deposit_amount?: number
           id?: string
+          logo_url?: string
           promptpay_id?: string
+          restaurant_name?: string
           updated_at?: string
         }
         Relationships: []

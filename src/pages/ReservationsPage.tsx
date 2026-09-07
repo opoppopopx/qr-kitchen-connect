@@ -11,9 +11,10 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Check, QrCode, X, Users, Copy } from "lucide-react";
 import { promptPayPayload } from "@/lib/promptpay";
+import { SlipReview } from "@/components/SlipReview";
 import { getPublicBaseUrl } from "@/lib/publicUrl";
 import type {
-  Reservation, ReservationItem, ReservationStatus, RestaurantSettings,
+  PaymentSlip, Reservation, ReservationItem, ReservationStatus, RestaurantSettings,
 } from "@/types/restaurant";
 import { reservationStatusLabels } from "@/types/restaurant";
 
@@ -28,6 +29,7 @@ export default function ReservationsPage() {
   const { getProductById, tables, setTableStatus, createOrder, getTableById } = useRestaurant();
   const [rows, setRows] = useState<Reservation[]>([]);
   const [items, setItems] = useState<ReservationItem[]>([]);
+  const [slips, setSlips] = useState<PaymentSlip[]>([]);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [qrRow, setQrRow] = useState<Reservation | null>(null);
   const [confirmRow, setConfirmRow] = useState<Reservation | null>(null);
@@ -36,13 +38,15 @@ export default function ReservationsPage() {
 
 
   const load = useCallback(async () => {
-    const [r, i, s] = await Promise.all([
+    const [r, i, s, sl] = await Promise.all([
       supabase.from("reservations").select("*").order("reserved_at", { ascending: false }),
       supabase.from("reservation_items").select("*"),
       supabase.from("restaurant_settings").select("*").limit(1).maybeSingle(),
+      supabase.from("payment_slips").select("*").eq("kind", "reservation").order("created_at", { ascending: false }),
     ]);
     setRows((r.data ?? []) as Reservation[]);
     setItems((i.data ?? []) as ReservationItem[]);
+    setSlips((sl.data ?? []) as PaymentSlip[]);
     if (s.data) setSettings(s.data as RestaurantSettings);
   }, []);
 
@@ -52,6 +56,11 @@ export default function ReservationsPage() {
       .channel("reservation-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "reservation_items" }, () => load())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_slips" }, () => {
+        toast.info("มีสลิปแจ้งโอนเข้ามาใหม่ 💸");
+        load();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "payment_slips" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
@@ -80,25 +89,48 @@ export default function ReservationsPage() {
     load();
   };
 
-  const confirmTransfer = async () => {
-    if (!confirmRow) return;
+  /** ยืนยันว่าเงินเข้าแล้ว: ยืนยันการจอง + จัดโต๊ะให้อัตโนมัติ */
+  const confirmPaid = async (row: Reservation, reference: string) => {
     setSaving(true);
-    const tableId = pickTable(confirmRow);
+    const tableId = pickTable(row);
     const { error } = await supabase.from("reservations")
-      .update({ status: "confirmed", payment_ref: ref.trim(), table_id: tableId })
-      .eq("id", confirmRow.id);
+      .update({ status: "confirmed", payment_ref: reference.trim(), table_id: tableId })
+      .eq("id", row.id);
     if (!error && tableId) {
       await supabase.from("tables").update({ status: "reserved" }).eq("id", tableId);
     }
     setSaving(false);
-    if (error) { toast.error("ยืนยันไม่สำเร็จ: " + error.message); return; }
+    if (error) { toast.error("ยืนยันไม่สำเร็จ: " + error.message); return false; }
     const num = tableId ? getTableById(tableId)?.number : undefined;
     toast.success(
-      `ยืนยันการโอนของ #${confirmRow.code} แล้ว` +
+      `ยืนยันการโอนของ #${row.code} แล้ว` +
       (num ? ` • จัดโต๊ะ ${num} ให้อัตโนมัติ` : " • ยังไม่มีโต๊ะว่างให้จัด"),
     );
+    load();
+    return true;
+  };
+
+  const confirmTransfer = async () => {
+    if (!confirmRow) return;
+    const ok = await confirmPaid(confirmRow, ref);
+    if (!ok) return;
     setConfirmRow(null);
     setRef("");
+  };
+
+  /** กดยืนยันจากสลิปคลิกเดียว: ทำเครื่องหมายสลิปว่าตรวจแล้ว + ยืนยันการจอง */
+  const verifySlip = async (slip: PaymentSlip, row: Reservation) => {
+    setSaving(true);
+    await supabase.from("payment_slips").update({ status: "verified" }).eq("id", slip.id);
+    setSaving(false);
+    await confirmPaid(row, slip.note || `สลิป ${new Date(slip.created_at).toLocaleString("th-TH")}`);
+  };
+
+  const rejectSlip = async (slip: PaymentSlip) => {
+    setSaving(true);
+    await supabase.from("payment_slips").update({ status: "rejected" }).eq("id", slip.id);
+    setSaving(false);
+    toast.success("แจ้งลูกค้าว่าสลิปไม่ถูกต้องแล้ว");
     load();
   };
 
@@ -235,6 +267,14 @@ export default function ReservationsPage() {
                 </div>
 
                 {r.payment_ref && <p className="text-xs text-muted-foreground">อ้างอิงการโอน: {r.payment_ref}</p>}
+
+                <SlipReview
+                  slips={slips.filter(s => s.reservation_id === r.id)}
+                  expected={Number(r.total_due)}
+                  busy={saving}
+                  onVerify={s => verifySlip(s, r)}
+                  onReject={rejectSlip}
+                />
 
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => setQrRow(r)}>

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RestaurantProvider } from "@/contexts/RestaurantContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { BrandingProvider } from "@/contexts/BrandingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import OrdersPage from "./pages/OrdersPage";
@@ -19,6 +20,7 @@ import QRCodesPage from "./pages/QRCodesPage";
 import KitchenDisplayPage from "./pages/KitchenDisplayPage";
 import BookingPage from "./pages/BookingPage";
 import ReservationsPage from "./pages/ReservationsPage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <BrandingProvider>
           <RestaurantProvider>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
@@ -49,9 +52,11 @@ const App = () => (
               <Route path="/menu" element={<ProtectedRoute><MenuManagementPage /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
               <Route path="/staff" element={<ProtectedRoute><StaffPage /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </RestaurantProvider>
+          </BrandingProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

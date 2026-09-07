@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Minus, Plus, Trash2, Printer, PlusCircle, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MenuPicker } from "@/components/MenuPicker";
-import { orderStatusLabels, type CartItem, type Order } from "@/types/restaurant";
+import { SlipReview } from "@/components/SlipReview";
+import { supabase } from "@/integrations/supabase/client";
+import { orderStatusLabels, type CartItem, type Order, type PaymentSlip } from "@/types/restaurant";
 
 
 const statusColors: Record<string, string> = {
@@ -32,6 +34,45 @@ export default function OrdersPage() {
   const [qrOrder, setQrOrder] = useState<Order | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [slips, setSlips] = useState<PaymentSlip[]>([]);
+  const [slipBusy, setSlipBusy] = useState(false);
+
+  const loadSlips = useCallback(async () => {
+    const { data } = await supabase.from("payment_slips").select("*")
+      .eq("kind", "order").order("created_at", { ascending: false });
+    setSlips((data ?? []) as PaymentSlip[]);
+  }, []);
+
+  useEffect(() => {
+    loadSlips();
+    const channel = supabase
+      .channel("order-slip-changes")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_slips" }, () => {
+        toast.info("ลูกค้าแจ้งโอนพร้อมสลิปแล้ว 💸 กดตรวจสอบในออร์เดอร์");
+        loadSlips();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "payment_slips" }, () => loadSlips())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadSlips]);
+
+  /** เงินเข้าจริง: ยืนยันสลิป + ปิดการชำระเงินของออร์เดอร์ในคลิกเดียว */
+  const verifySlip = async (slip: PaymentSlip, order: Order) => {
+    setSlipBusy(true);
+    await supabase.from("payment_slips").update({ status: "verified" }).eq("id", slip.id);
+    await processPayment(order.id, "qr_code");
+    await loadSlips();
+    setSlipBusy(false);
+    toast.success(`ยืนยันการชำระเงินออร์เดอร์ #${order.order_no} แล้ว`);
+  };
+
+  const rejectSlip = async (slip: PaymentSlip) => {
+    setSlipBusy(true);
+    await supabase.from("payment_slips").update({ status: "rejected" }).eq("id", slip.id);
+    await loadSlips();
+    setSlipBusy(false);
+    toast.success("แจ้งลูกค้าว่าสลิปไม่ถูกต้องแล้ว");
+  };
 
 
   const filtered = filter === "all" ? orders : orders.filter(o => o.status === filter);
@@ -169,6 +210,13 @@ export default function OrdersPage() {
                     <span>รวม</span>
                     <span>฿{Number(order.total_amount).toLocaleString()}</span>
                   </div>
+                  <SlipReview
+                    slips={slips.filter(s => s.order_id === order.id)}
+                    expected={Number(order.total_amount)}
+                    busy={slipBusy}
+                    onVerify={s => verifySlip(s, order)}
+                    onReject={rejectSlip}
+                  />
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {editable(order) && (

@@ -9,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { CalendarCheck, Search, UtensilsCrossed } from "lucide-react";
+import { CalendarCheck, Search } from "lucide-react";
 import { MenuPicker } from "@/components/MenuPicker";
 import { promptPayPayload } from "@/lib/promptpay";
+import { SlipUpload } from "@/components/SlipUpload";
+import { useBranding } from "@/contexts/BrandingContext";
 import type {
   CartItem, Category, Product, Reservation, RestaurantSettings,
 } from "@/types/restaurant";
@@ -25,6 +27,7 @@ const statusStyle: Record<string, string> = {
 };
 
 export default function BookingPage() {
+  const { name: brandName, logoUrl: brandLogo } = useBranding();
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -125,9 +128,9 @@ export default function BookingPage() {
     <div className="min-h-screen bg-gradient-to-b from-primary/10 via-background to-background">
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-2">
-          <UtensilsCrossed className="h-6 w-6 text-primary" />
+          <img src={brandLogo} alt={`โลโก้ ${brandName}`} className="h-8 w-8 object-contain" />
           <div>
-            <h1 className="text-xl font-bold leading-none">จองโต๊ะล่วงหน้า</h1>
+            <h1 className="text-xl font-bold leading-none">{brandName} • จองโต๊ะล่วงหน้า</h1>
             <p className="text-xs text-muted-foreground">ยืนยันการจองด้วยการโอนมัดจำ</p>
           </div>
         </div>
@@ -173,9 +176,15 @@ export default function BookingPage() {
                     </p>
                   )}
                   <p className="text-xs text-center text-muted-foreground">
-                    สแกนโอนยอดด้านบน แล้วแจ้งสลิป/รหัสการจอง <b>{active.code}</b> ให้พนักงาน
-                    การจองจะสมบูรณ์เมื่อพนักงานตรวจสอบยอดโอนแล้ว
+                    สแกนโอนยอดด้านบน แล้วแนบสลิปด้านล่าง — ระบบจะตรวจสลิปซ้ำและแจ้งพนักงาน
+                    ให้ยืนยันการจอง <b>{active.code}</b> ให้ทันที
                   </p>
+                  <SlipUpload
+                    kind="reservation"
+                    reservationId={active.id}
+                    amount={Number(active.total_due)}
+                    defaultNote={`จอง ${active.code}`}
+                  />
                 </div>
               )}
 

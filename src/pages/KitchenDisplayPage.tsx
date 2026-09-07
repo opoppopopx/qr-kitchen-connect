@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ const columns = [
 ] as const;
 
 export default function KitchenDisplayPage() {
+  const { name: brandName, logoUrl: brandLogo } = useBranding();
   const { user, profile, role, loading, signOut } = useAuth();
   const { orders, getProductById, getTableById, updateOrderStatus } = useRestaurant();
 
@@ -30,7 +32,7 @@ export default function KitchenDisplayPage() {
         <div className="flex items-center gap-2">
           <ChefHat className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="font-bold text-lg leading-tight">จอครัว (Kitchen Display)</h1>
+            <h1 className="font-bold text-lg leading-tight">{brandName} • จอครัว</h1>
             <p className="text-xs text-muted-foreground">
               {profile?.full_name || profile?.username} • ออร์เดอร์ค้าง {activeOrders.length} รายการ
             </p>
