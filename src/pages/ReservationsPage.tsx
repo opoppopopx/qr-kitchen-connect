@@ -47,7 +47,14 @@ export default function ReservationsPage() {
     setRows((r.data ?? []) as Reservation[]);
     setItems((i.data ?? []) as ReservationItem[]);
     setSlips((sl.data ?? []) as PaymentSlip[]);
-    if (s.data) setSettings(s.data as RestaurantSettings);
+    setSettings(
+      (s.data as RestaurantSettings | null) ?? {
+        id: "",
+        promptpay_id: "",
+        account_name: "",
+        deposit_amount: 100,
+      },
+    );
   }, []);
 
   useEffect(() => {
