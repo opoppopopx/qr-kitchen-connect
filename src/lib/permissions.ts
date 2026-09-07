@@ -20,6 +20,7 @@ export const navItems: NavItem[] = [
   { title: "QR โต๊ะ", url: "/qr", icon: QrCode, roles: ['admin', 'manager', 'cashier', 'waiter'] },
   { title: "การจองโต๊ะ", url: "/reservations", icon: CalendarCheck, roles: ['admin', 'manager', 'cashier', 'waiter'] },
   { title: "ห้องครัว", url: "/kitchen", icon: ChefHat, roles: ['admin', 'manager', 'waiter'] },
+  { title: "จอครัว (พ่อครัว)", url: "/kd", icon: ChefHat, roles: ['admin', 'manager', 'kitchen'] },
   { title: "เมนูอาหาร", url: "/menu", icon: BookOpen, roles: ['admin', 'manager'] },
   { title: "ลูกค้าสมาชิก", url: "/customers", icon: Users, roles: ['admin', 'manager', 'cashier'] },
   { title: "จัดการพนักงาน", url: "/staff", icon: UserCog, roles: ['admin', 'manager'] },
