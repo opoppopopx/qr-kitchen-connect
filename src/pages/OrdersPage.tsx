@@ -259,8 +259,9 @@ export default function OrdersPage() {
                           <Button size="sm" variant="secondary" onClick={() => setQrOrder(order)}>
                             <QrCode className="h-4 w-4 mr-1" /> ออก QR ให้สแกน
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'cash')}>ยืนยันชำระเงินสด</Button>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'qr_code')}>ยืนยันชำระ QR</Button>
+                          <Button size="sm" variant="outline" onClick={async () => { await processPayment(order.id, 'cash'); playSound("paid"); toast.success("ยืนยันชำระเงินสดแล้ว"); }}>ยืนยันชำระเงินสด</Button>
+                          <Button size="sm" variant="outline" onClick={async () => { await processPayment(order.id, 'qr_code'); playSound("paid"); toast.success("ยืนยันชำระ QR แล้ว"); }}>ยืนยันชำระ QR</Button>
+
                         </>
                       )}
 
