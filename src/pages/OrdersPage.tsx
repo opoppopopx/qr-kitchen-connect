@@ -318,9 +318,11 @@ export default function OrdersPage() {
               onClick={async () => {
                 if (!qrOrder) return;
                 await processPayment(qrOrder.id, 'qr_code');
+                playSound("paid");
                 toast.success("ยืนยันการชำระเงินแล้ว");
                 setQrOrder(null);
               }}
+
             >
               ยืนยันชำระเงินแล้ว
             </Button>
