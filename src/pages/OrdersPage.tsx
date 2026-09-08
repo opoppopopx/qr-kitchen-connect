@@ -30,7 +30,7 @@ export default function OrdersPage() {
   const {
     orders, categories, products, payments,
     getProductById, getTableById, updateOrderStatus, processPayment,
-    setItemQuantity, setItemNote, addItemsToOrder,
+    setItemQuantity, setItemNote, addItemsToOrder, onNewOrder,
   } = useRestaurant();
   const [filter, setFilter] = useState<string>("all");
   const [addTo, setAddTo] = useState<Order | null>(null);
@@ -39,6 +39,15 @@ export default function OrdersPage() {
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [slips, setSlips] = useState<PaymentSlip[]>([]);
   const [slipBusy, setSlipBusy] = useState(false);
+
+  useEffect(() => {
+    const off = onNewOrder(({ tableId }) => {
+      const table = getTableById(tableId);
+      toast.success(`ออร์เดอร์ใหม่จากโต๊ะ ${table?.number ?? "-"} 🔔`);
+      playSound("newOrder");
+    });
+    return off;
+  }, [onNewOrder, getTableById]);
 
   const loadSlips = useCallback(async () => {
     const { data } = await supabase.from("payment_slips").select("*")
@@ -52,6 +61,7 @@ export default function OrdersPage() {
       .channel("order-slip-changes")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_slips" }, () => {
         toast.info("ลูกค้าแจ้งโอนพร้อมสลิปแล้ว 💸 กดตรวจสอบในออร์เดอร์");
+        playSound("slip");
         loadSlips();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "payment_slips" }, () => loadSlips())
@@ -66,8 +76,10 @@ export default function OrdersPage() {
     await processPayment(order.id, "qr_code");
     await loadSlips();
     setSlipBusy(false);
+    playSound("paid");
     toast.success(`ยืนยันการชำระเงินออร์เดอร์ #${order.order_no} แล้ว`);
   };
+
 
   const rejectSlip = async (slip: PaymentSlip) => {
     setSlipBusy(true);
