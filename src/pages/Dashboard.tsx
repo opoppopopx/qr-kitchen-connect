@@ -1,11 +1,12 @@
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DollarSign, ShoppingCart, UtensilsCrossed, Clock, CalendarRange, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { DollarSign, ShoppingCart, UtensilsCrossed, Clock, CalendarRange } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { orderStatusLabels } from "@/types/restaurant";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSound } from "@/lib/sound";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -15,42 +16,17 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-destructive/10 text-destructive",
 };
 
-const playBeep = () => {
-  try {
-    const Ctx = window.AudioContext ?? (window as any).webkitAudioContext;
-    const ctx = new Ctx();
-    [0, 0.2].forEach(offset => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.001, ctx.currentTime + offset);
-      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + offset + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.18);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(ctx.currentTime + offset);
-      osc.stop(ctx.currentTime + offset + 0.2);
-    });
-    setTimeout(() => ctx.close(), 800);
-  } catch {
-    /* ignore audio errors */
-  }
-};
-
 export default function Dashboard() {
   const {
     orders, tables, todaySales, todayOrderCount, todayItemCount,
     yearSales, yearOrderCount, getProductById, getTableById, onNewOrder,
   } = useRestaurant();
-  const [soundOn, setSoundOn] = useState(true);
-  const soundRef = useRef(soundOn);
-  soundRef.current = soundOn;
 
   useEffect(() => {
     const off = onNewOrder(({ tableId }) => {
       const table = tables.find(t => t.id === tableId);
       toast.success(`ออร์เดอร์ใหม่จากโต๊ะ ${table?.number ?? "-"} 🔔`);
-      if (soundRef.current) playBeep();
+      playSound("newOrder");
     });
     return off;
   }, [onNewOrder, tables]);
@@ -62,11 +38,9 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">แดชบอร์ด</h2>
-        <Button size="sm" variant="outline" onClick={() => setSoundOn(v => !v)}>
-          {soundOn ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
-          {soundOn ? "เสียงแจ้งเตือน: เปิด" : "เสียงแจ้งเตือน: ปิด"}
-        </Button>
+        <SoundToggle />
       </div>
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <Card>

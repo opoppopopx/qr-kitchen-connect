@@ -2,9 +2,22 @@ import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSound } from "@/lib/sound";
 
 export default function KitchenPage() {
-  const { orders, getProductById, getTableById, updateOrderStatus } = useRestaurant();
+  const { orders, getProductById, getTableById, updateOrderStatus, onNewOrder } = useRestaurant();
+
+  useEffect(() => {
+    const off = onNewOrder(({ tableId }) => {
+      const table = getTableById(tableId);
+      toast.success(`ออร์เดอร์ใหม่เข้าครัว — โต๊ะ ${table?.number ?? "-"} 🍳`);
+      playSound("newOrder");
+    });
+    return off;
+  }, [onNewOrder, getTableById]);
 
   const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'ready');
 
@@ -16,7 +29,11 @@ export default function KitchenPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">ห้องครัว</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">ห้องครัว</h2>
+        <SoundToggle />
+      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {columns.map(col => {
