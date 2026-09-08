@@ -52,9 +52,13 @@ export default function KitchenDisplayPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={signOut}>
-          <LogOut className="h-4 w-4 mr-1" /> ออกจากระบบ
-        </Button>
+        <div className="flex items-center gap-2">
+          <SoundToggle compact />
+          <Button variant="outline" size="sm" onClick={signOut}>
+            <LogOut className="h-4 w-4 mr-1" /> ออกจากระบบ
+          </Button>
+        </div>
+
       </header>
 
       <main className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">

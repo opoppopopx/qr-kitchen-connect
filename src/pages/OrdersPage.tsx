@@ -11,8 +11,11 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MenuPicker } from "@/components/MenuPicker";
 import { SlipReview } from "@/components/SlipReview";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSound } from "@/lib/sound";
 import { supabase } from "@/integrations/supabase/client";
 import { orderStatusLabels, type CartItem, type Order, type PaymentSlip } from "@/types/restaurant";
+
 
 
 const statusColors: Record<string, string> = {
