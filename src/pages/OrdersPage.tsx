@@ -123,22 +123,26 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-2xl font-bold">ออร์เดอร์</h2>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="กรองสถานะ" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทั้งหมด</SelectItem>
-            <SelectItem value="pending">รอรับออร์เดอร์</SelectItem>
-            <SelectItem value="preparing">กำลังทำ</SelectItem>
-            <SelectItem value="ready">ทำเสร็จแล้ว</SelectItem>
-            <SelectItem value="served">เสิร์ฟแล้ว</SelectItem>
-            <SelectItem value="cancelled">ยกเลิก</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <SoundToggle />
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="กรองสถานะ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทั้งหมด</SelectItem>
+              <SelectItem value="pending">รอรับออร์เดอร์</SelectItem>
+              <SelectItem value="preparing">กำลังทำ</SelectItem>
+              <SelectItem value="ready">ทำเสร็จแล้ว</SelectItem>
+              <SelectItem value="served">เสิร์ฟแล้ว</SelectItem>
+              <SelectItem value="cancelled">ยกเลิก</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
 
       <div className="grid gap-4">
         {filtered.map(order => {
