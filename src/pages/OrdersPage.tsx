@@ -11,8 +11,11 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MenuPicker } from "@/components/MenuPicker";
 import { SlipReview } from "@/components/SlipReview";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSound } from "@/lib/sound";
 import { supabase } from "@/integrations/supabase/client";
 import { orderStatusLabels, type CartItem, type Order, type PaymentSlip } from "@/types/restaurant";
+
 
 
 const statusColors: Record<string, string> = {
@@ -27,7 +30,7 @@ export default function OrdersPage() {
   const {
     orders, categories, products, payments,
     getProductById, getTableById, updateOrderStatus, processPayment,
-    setItemQuantity, setItemNote, addItemsToOrder,
+    setItemQuantity, setItemNote, addItemsToOrder, onNewOrder,
   } = useRestaurant();
   const [filter, setFilter] = useState<string>("all");
   const [addTo, setAddTo] = useState<Order | null>(null);
@@ -36,6 +39,15 @@ export default function OrdersPage() {
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [slips, setSlips] = useState<PaymentSlip[]>([]);
   const [slipBusy, setSlipBusy] = useState(false);
+
+  useEffect(() => {
+    const off = onNewOrder(({ tableId }) => {
+      const table = getTableById(tableId);
+      toast.success(`ออร์เดอร์ใหม่จากโต๊ะ ${table?.number ?? "-"} 🔔`);
+      playSound("newOrder");
+    });
+    return off;
+  }, [onNewOrder, getTableById]);
 
   const loadSlips = useCallback(async () => {
     const { data } = await supabase.from("payment_slips").select("*")
@@ -49,6 +61,7 @@ export default function OrdersPage() {
       .channel("order-slip-changes")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_slips" }, () => {
         toast.info("ลูกค้าแจ้งโอนพร้อมสลิปแล้ว 💸 กดตรวจสอบในออร์เดอร์");
+        playSound("slip");
         loadSlips();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "payment_slips" }, () => loadSlips())
@@ -63,8 +76,10 @@ export default function OrdersPage() {
     await processPayment(order.id, "qr_code");
     await loadSlips();
     setSlipBusy(false);
+    playSound("paid");
     toast.success(`ยืนยันการชำระเงินออร์เดอร์ #${order.order_no} แล้ว`);
   };
+
 
   const rejectSlip = async (slip: PaymentSlip) => {
     setSlipBusy(true);
@@ -108,22 +123,26 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-2xl font-bold">ออร์เดอร์</h2>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="กรองสถานะ" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทั้งหมด</SelectItem>
-            <SelectItem value="pending">รอรับออร์เดอร์</SelectItem>
-            <SelectItem value="preparing">กำลังทำ</SelectItem>
-            <SelectItem value="ready">ทำเสร็จแล้ว</SelectItem>
-            <SelectItem value="served">เสิร์ฟแล้ว</SelectItem>
-            <SelectItem value="cancelled">ยกเลิก</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <SoundToggle />
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="กรองสถานะ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทั้งหมด</SelectItem>
+              <SelectItem value="pending">รอรับออร์เดอร์</SelectItem>
+              <SelectItem value="preparing">กำลังทำ</SelectItem>
+              <SelectItem value="ready">ทำเสร็จแล้ว</SelectItem>
+              <SelectItem value="served">เสิร์ฟแล้ว</SelectItem>
+              <SelectItem value="cancelled">ยกเลิก</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
 
       <div className="grid gap-4">
         {filtered.map(order => {
@@ -240,8 +259,9 @@ export default function OrdersPage() {
                           <Button size="sm" variant="secondary" onClick={() => setQrOrder(order)}>
                             <QrCode className="h-4 w-4 mr-1" /> ออก QR ให้สแกน
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'cash')}>ยืนยันชำระเงินสด</Button>
-                          <Button size="sm" variant="outline" onClick={() => processPayment(order.id, 'qr_code')}>ยืนยันชำระ QR</Button>
+                          <Button size="sm" variant="outline" onClick={async () => { await processPayment(order.id, 'cash'); playSound("paid"); toast.success("ยืนยันชำระเงินสดแล้ว"); }}>ยืนยันชำระเงินสด</Button>
+                          <Button size="sm" variant="outline" onClick={async () => { await processPayment(order.id, 'qr_code'); playSound("paid"); toast.success("ยืนยันชำระ QR แล้ว"); }}>ยืนยันชำระ QR</Button>
+
                         </>
                       )}
 
@@ -298,9 +318,11 @@ export default function OrdersPage() {
               onClick={async () => {
                 if (!qrOrder) return;
                 await processPayment(qrOrder.id, 'qr_code');
+                playSound("paid");
                 toast.success("ยืนยันการชำระเงินแล้ว");
                 setQrOrder(null);
               }}
+
             >
               ยืนยันชำระเงินแล้ว
             </Button>
