@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChefHat, LogOut } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSound } from "@/lib/sound";
 
 const columns = [
   { status: 'pending', label: '🔴 รอรับ', color: 'border-yellow-400' },
@@ -16,7 +20,16 @@ const columns = [
 export default function KitchenDisplayPage() {
   const { name: brandName, logoUrl: brandLogo } = useBranding();
   const { user, profile, role, loading, signOut } = useAuth();
-  const { orders, getProductById, getTableById, updateOrderStatus } = useRestaurant();
+  const { orders, getProductById, getTableById, updateOrderStatus, onNewOrder } = useRestaurant();
+
+  useEffect(() => {
+    const off = onNewOrder(({ tableId }) => {
+      const table = getTableById(tableId);
+      toast.success(`ออร์เดอร์ใหม่ — โต๊ะ ${table?.number ?? "-"} 🍳`);
+      playSound("newOrder");
+    });
+    return off;
+  }, [onNewOrder, getTableById]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">กำลังโหลด...</div>;
@@ -25,6 +38,7 @@ export default function KitchenDisplayPage() {
   if (role && !['kitchen', 'admin', 'manager'].includes(role)) return <Navigate to="/" replace />;
 
   const activeOrders = orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
+
 
   return (
     <div className="min-h-screen bg-muted/30">
