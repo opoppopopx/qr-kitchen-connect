@@ -120,10 +120,12 @@ export default function ReservationsPage() {
     setSaving(false);
     if (error) { toast.error("ยืนยันไม่สำเร็จ: " + error.message); return false; }
     const num = tableId ? getTableById(tableId)?.number : undefined;
+    playSound("paid");
     toast.success(
       `ยืนยันการโอนของ #${row.code} แล้ว` +
       (num ? ` • จัดโต๊ะ ${num} ให้อัตโนมัติ` : " • ยังไม่มีโต๊ะว่างให้จัด"),
     );
+
     load();
     return true;
   };
