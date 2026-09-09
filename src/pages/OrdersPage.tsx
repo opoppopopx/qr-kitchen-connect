@@ -10,6 +10,7 @@ import { Minus, Plus, Trash2, Printer, PlusCircle, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MenuPicker } from "@/components/MenuPicker";
+import { ProductThumb } from "@/components/ProductThumb";
 import { SlipReview } from "@/components/SlipReview";
 import { SoundToggle } from "@/components/SoundToggle";
 import { playSound } from "@/lib/sound";
@@ -183,7 +184,10 @@ export default function OrdersPage() {
                     return (
                       <div key={item.id} className="rounded-lg border p-2 space-y-2">
                         <div className="flex items-center justify-between gap-2 text-sm">
-                          <span>{product?.image} {product?.name}</span>
+                          <span className="flex items-center gap-2">
+                            {product && <ProductThumb image={product.image} name={product.name} className="h-8 w-8" emojiClassName="text-xl" />}
+                            {product?.name}
+                          </span>
                           <div className="flex items-center gap-2">
                             {editable(order) ? (
                               <div className="flex items-center gap-1">

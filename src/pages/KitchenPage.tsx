@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { SoundToggle } from "@/components/SoundToggle";
 import { playSound } from "@/lib/sound";
+import { ProductThumb } from "@/components/ProductThumb";
 
 export default function KitchenPage() {
   const { orders, getProductById, getTableById, updateOrderStatus, onNewOrder } = useRestaurant();
@@ -61,8 +62,11 @@ export default function KitchenPage() {
                           {order.items.map(item => {
                             const product = getProductById(item.product_id);
                             return (
-                              <li key={item.id} className="text-sm flex justify-between">
-                                <span>{product?.image} {product?.name}</span>
+                              <li key={item.id} className="text-sm flex justify-between items-center">
+                                <span className="flex items-center gap-2">
+                                  {product && <ProductThumb image={product.image} name={product.name} className="h-8 w-8" emojiClassName="text-xl" />}
+                                  {product?.name}
+                                </span>
                                 <span className="font-medium">x{item.quantity}</span>
                               </li>
                             );

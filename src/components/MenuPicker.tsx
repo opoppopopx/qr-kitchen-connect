@@ -67,7 +67,10 @@ export function MenuPicker({ categories, products, cart, setCart }: Props) {
         {cart.map(i => (
           <div key={i.product.id} className="space-y-1 rounded-lg border p-2">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium">{i.product.image} {i.product.name}</span>
+                 <span className="text-sm font-medium flex items-center gap-2">
+     <ProductThumb image={i.product.image} name={i.product.name} className="h-6 w-6" emojiClassName="text-base" />
+     {i.product.name}
+   </span>
               <div className="flex items-center gap-1">
                 <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(i.product.id, i.quantity - 1)}>
                   <Minus className="h-3 w-3" />

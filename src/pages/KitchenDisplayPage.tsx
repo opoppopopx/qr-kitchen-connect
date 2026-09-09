@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { SoundToggle } from "@/components/SoundToggle";
 import { playSound } from "@/lib/sound";
+import { ProductThumb } from "@/components/ProductThumb";
 
 const columns = [
   { status: 'pending', label: '🔴 รอรับ', color: 'border-yellow-400' },
@@ -88,8 +89,11 @@ export default function KitchenDisplayPage() {
                             const product = getProductById(item.product_id);
                             return (
                               <li key={item.id} className="text-sm">
-                                <div className="flex justify-between">
-                                  <span>{product?.image} {product?.name}</span>
+                                <div className="flex justify-between items-center">
+                                  <span className="flex items-center gap-2">
+                                    {product && <ProductThumb image={product.image} name={product.name} className="h-8 w-8" emojiClassName="text-xl" />}
+                                    {product?.name}
+                                  </span>
                                   <span className="font-medium">x{item.quantity}</span>
                                 </div>
                                 {item.note && <p className="text-xs text-destructive">📝 {item.note}</p>}
