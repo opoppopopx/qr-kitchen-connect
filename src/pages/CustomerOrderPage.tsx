@@ -237,7 +237,9 @@ export default function CustomerOrderPage() {
             )}
           </SheetContent>
         </Sheet>
+        </div>
       </header>
+
 
       <div className="p-4 space-y-4">
         {table.status !== 'occupied' && (
