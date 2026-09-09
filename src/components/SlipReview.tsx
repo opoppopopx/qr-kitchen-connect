@@ -69,12 +69,18 @@ export function SlipReview({ slips, expected, onVerify, onReject, busy }: Props)
         </div>
       ))}
 
-      <Dialog open={!!preview} onOpenChange={o => !o && setPreview(null)}>
+      <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setPreview(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>สลิปการโอน</DialogTitle></DialogHeader>
-          {preview
-            ? <img src={preview} alt="สลิปการโอนเงินของลูกค้า" className="w-full rounded-lg" />
-            : <p className="text-sm text-muted-foreground">ไม่พบรูปสลิป</p>}
+          {loading && <p className="text-sm text-muted-foreground">กำลังเปิดรูปสลิป...</p>}
+          {!loading && preview && (
+            <img src={preview} alt="สลิปการโอนเงินของลูกค้า" className="w-full rounded-lg" />
+          )}
+          {!loading && !preview && (
+            <p className="text-sm text-muted-foreground">
+              ไม่พบรูปสลิปของรายการนี้ (ลูกค้าแนบไม่สำเร็จ) กรุณาให้ลูกค้าแนบสลิปใหม่อีกครั้ง
+            </p>
+          )}
         </DialogContent>
       </Dialog>
     </div>
