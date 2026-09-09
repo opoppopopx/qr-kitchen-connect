@@ -58,6 +58,18 @@ export default function CustomerOrderPage() {
     if (servedUnpaid.length === 0 && !qrPay) { setPayOpen(false); setPayDismissed(false); }
   }, [servedUnpaid.length, payDismissed, qrPay]);
 
+  // แจ้งเตือน + เสียง เมื่ออาหารของโต๊ะนี้ทำเสร็จแล้ว
+  const notifiedReady = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    myOrders.filter(o => o.status === 'ready').forEach(o => {
+      if (notifiedReady.current.has(o.id)) return;
+      notifiedReady.current.add(o.id);
+      playSound("foodReady");
+      toast.success(`อาหารออร์เดอร์ #${o.order_no} พร้อมเสิร์ฟแล้ว 🍽️`);
+    });
+  }, [myOrders]);
+
+
 
 
   const addToCart = (product: Product) =>
