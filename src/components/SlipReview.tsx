@@ -52,7 +52,7 @@ export function SlipReview({ slips, expected, onVerify, onReject, busy }: Props)
           </div>
           {s.note && <p className="text-xs text-muted-foreground">อ้างอิง: {s.note}</p>}
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => open(s)}>
+            <Button size="sm" variant="outline" onClick={() => view(s)}>
               <ImageIcon className="h-3 w-3 mr-1" /> ดูสลิป
             </Button>
             {s.status === "pending" && (
