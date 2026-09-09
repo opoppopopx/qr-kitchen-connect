@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash2, Send, QrCode, Banknote, BellRing } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -17,6 +17,9 @@ import { orderStatusLabels } from "@/types/restaurant";
 import { ProductThumb } from "@/components/ProductThumb";
 import { SlipUpload } from "@/components/SlipUpload";
 import { useBranding } from "@/contexts/BrandingContext";
+import { playSound } from "@/lib/sound";
+import { SoundToggle } from "@/components/SoundToggle";
+
 
 
 export default function CustomerOrderPage() {
@@ -57,6 +60,18 @@ export default function CustomerOrderPage() {
     if (servedUnpaid.length > 0 && !payDismissed) setPayOpen(true);
     if (servedUnpaid.length === 0 && !qrPay) { setPayOpen(false); setPayDismissed(false); }
   }, [servedUnpaid.length, payDismissed, qrPay]);
+
+  // แจ้งเตือน + เสียง เมื่ออาหารของโต๊ะนี้ทำเสร็จแล้ว
+  const notifiedReady = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    myOrders.filter(o => o.status === 'ready').forEach(o => {
+      if (notifiedReady.current.has(o.id)) return;
+      notifiedReady.current.add(o.id);
+      playSound("foodReady");
+      toast.success(`อาหารออร์เดอร์ #${o.order_no} พร้อมเสิร์ฟแล้ว 🍽️`);
+    });
+  }, [myOrders]);
+
 
 
 
@@ -158,7 +173,10 @@ export default function CustomerOrderPage() {
           </div>
           <h1 className="font-bold text-primary">โต๊ะ {table.number} • โซน {table.zone}</h1>
         </div>
+        <div className="flex items-center gap-2">
+        <SoundToggle compact />
         <Sheet>
+
           <SheetTrigger asChild>
             <Button className="relative">
               <ShoppingCart className="h-4 w-4 mr-2" /> ตะกร้า
@@ -219,7 +237,9 @@ export default function CustomerOrderPage() {
             )}
           </SheetContent>
         </Sheet>
+        </div>
       </header>
+
 
       <div className="p-4 space-y-4">
         {table.status !== 'occupied' && (

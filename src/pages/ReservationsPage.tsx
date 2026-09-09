@@ -12,7 +12,10 @@ import { toast } from "sonner";
 import { Check, QrCode, X, Users, Copy } from "lucide-react";
 import { promptPayPayload } from "@/lib/promptpay";
 import { SlipReview } from "@/components/SlipReview";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSound } from "@/lib/sound";
 import { getPublicBaseUrl } from "@/lib/publicUrl";
+
 import type {
   PaymentSlip, Reservation, ReservationItem, ReservationStatus, RestaurantSettings,
 } from "@/types/restaurant";
@@ -61,16 +64,24 @@ export default function ReservationsPage() {
     load();
     const channel = supabase
       .channel("reservation-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => load())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reservations" }, () => {
+        toast.info("มีการจองโต๊ะใหม่เข้ามา 📅");
+        playSound("newReservation");
+        load();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reservations" }, () => load())
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "reservations" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "reservation_items" }, () => load())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_slips" }, () => {
         toast.info("มีสลิปแจ้งโอนเข้ามาใหม่ 💸");
+        playSound("slip");
         load();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "payment_slips" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
+
 
   /** เลือกโต๊ะอัตโนมัติตามโซน/จำนวนคนที่ลูกค้าเลือก */
   const pickTable = (row: Reservation) => {
@@ -109,10 +120,12 @@ export default function ReservationsPage() {
     setSaving(false);
     if (error) { toast.error("ยืนยันไม่สำเร็จ: " + error.message); return false; }
     const num = tableId ? getTableById(tableId)?.number : undefined;
+    playSound("paid");
     toast.success(
       `ยืนยันการโอนของ #${row.code} แล้ว` +
       (num ? ` • จัดโต๊ะ ${num} ให้อัตโนมัติ` : " • ยังไม่มีโต๊ะว่างให้จัด"),
     );
+
     load();
     return true;
   };
@@ -205,7 +218,12 @@ export default function ReservationsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">การจองโต๊ะ</h2>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h2 className="text-2xl font-bold">การจองโต๊ะ</h2>
+        <SoundToggle />
+      </div>
+
+
 
       <Card>
         <CardHeader>
