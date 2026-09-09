@@ -23,13 +23,19 @@ interface Props {
 
 /** รายการสลิปที่ลูกค้าแจ้งโอน ให้พนักงานเปิดดูรูปและยืนยันในคลิกเดียว */
 export function SlipReview({ slips, expected, onVerify, onReject, busy }: Props) {
+  const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (!slips.length) return null;
 
-  const open = async (slip: PaymentSlip) => {
+  const view = async (slip: PaymentSlip) => {
+    setOpen(true);
+    setPreview(null);
+    setLoading(true);
     const url = await slipImageUrl(slip.storage_path);
     setPreview(url);
+    setLoading(false);
   };
 
   return (
@@ -46,7 +52,7 @@ export function SlipReview({ slips, expected, onVerify, onReject, busy }: Props)
           </div>
           {s.note && <p className="text-xs text-muted-foreground">อ้างอิง: {s.note}</p>}
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => open(s)}>
+            <Button size="sm" variant="outline" onClick={() => view(s)}>
               <ImageIcon className="h-3 w-3 mr-1" /> ดูสลิป
             </Button>
             {s.status === "pending" && (
@@ -63,12 +69,18 @@ export function SlipReview({ slips, expected, onVerify, onReject, busy }: Props)
         </div>
       ))}
 
-      <Dialog open={!!preview} onOpenChange={o => !o && setPreview(null)}>
+      <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setPreview(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>สลิปการโอน</DialogTitle></DialogHeader>
-          {preview
-            ? <img src={preview} alt="สลิปการโอนเงินของลูกค้า" className="w-full rounded-lg" />
-            : <p className="text-sm text-muted-foreground">ไม่พบรูปสลิป</p>}
+          {loading && <p className="text-sm text-muted-foreground">กำลังเปิดรูปสลิป...</p>}
+          {!loading && preview && (
+            <img src={preview} alt="สลิปการโอนเงินของลูกค้า" className="w-full rounded-lg" />
+          )}
+          {!loading && !preview && (
+            <p className="text-sm text-muted-foreground">
+              ไม่พบรูปสลิปของรายการนี้ (ลูกค้าแนบไม่สำเร็จ) กรุณาให้ลูกค้าแนบสลิปใหม่อีกครั้ง
+            </p>
+          )}
         </DialogContent>
       </Dialog>
     </div>
