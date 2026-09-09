@@ -12,7 +12,10 @@ import { toast } from "sonner";
 import { Check, QrCode, X, Users, Copy } from "lucide-react";
 import { promptPayPayload } from "@/lib/promptpay";
 import { SlipReview } from "@/components/SlipReview";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSound } from "@/lib/sound";
 import { getPublicBaseUrl } from "@/lib/publicUrl";
+
 import type {
   PaymentSlip, Reservation, ReservationItem, ReservationStatus, RestaurantSettings,
 } from "@/types/restaurant";
