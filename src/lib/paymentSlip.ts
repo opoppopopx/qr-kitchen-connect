@@ -38,7 +38,15 @@ export async function submitSlip(input: SubmitSlipInput): Promise<SubmitSlipResu
 
   const hash = await fileHash(file);
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase().slice(0, 5);
-  const path = `${input.kind}/${hash}.${ext}`;
+  const path = `${input.kind}/${hash}-${Date.now()}.${ext}`;
+
+  // อัปโหลดรูปก่อน เพื่อไม่ให้เกิดรายการแจ้งโอนที่ไม่มีรูปสลิป
+  const up = await supabase.storage.from(SLIP_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || undefined,
+  });
+  if (up.error) return { slip: null, error: "failed" };
 
   const { data, error } = await supabase.from("payment_slips").insert({
     kind: input.kind,
@@ -52,17 +60,12 @@ export async function submitSlip(input: SubmitSlipInput): Promise<SubmitSlipResu
   }).select("*").maybeSingle();
 
   if (error) {
+    await supabase.storage.from(SLIP_BUCKET).remove([path]);
     if (error.code === "23505" || /duplicate key/i.test(error.message)) {
       return { slip: null, error: "duplicate" };
     }
     return { slip: null, error: "failed" };
   }
-
-  await supabase.storage.from(SLIP_BUCKET).upload(path, file, {
-    cacheControl: "3600",
-    upsert: true,
-    contentType: file.type || undefined,
-  });
 
   return { slip: (data as PaymentSlip) ?? null, error: null };
 }
