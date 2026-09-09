@@ -23,13 +23,19 @@ interface Props {
 
 /** รายการสลิปที่ลูกค้าแจ้งโอน ให้พนักงานเปิดดูรูปและยืนยันในคลิกเดียว */
 export function SlipReview({ slips, expected, onVerify, onReject, busy }: Props) {
+  const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (!slips.length) return null;
 
-  const open = async (slip: PaymentSlip) => {
+  const view = async (slip: PaymentSlip) => {
+    setOpen(true);
+    setPreview(null);
+    setLoading(true);
     const url = await slipImageUrl(slip.storage_path);
     setPreview(url);
+    setLoading(false);
   };
 
   return (
