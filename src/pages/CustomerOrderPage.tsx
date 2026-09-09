@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Minus, Plus, ShoppingCart, Trash2, Send, QrCode, Banknote, BellRing } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -17,6 +17,9 @@ import { orderStatusLabels } from "@/types/restaurant";
 import { ProductThumb } from "@/components/ProductThumb";
 import { SlipUpload } from "@/components/SlipUpload";
 import { useBranding } from "@/contexts/BrandingContext";
+import { playSound } from "@/lib/sound";
+import { SoundToggle } from "@/components/SoundToggle";
+
 
 
 export default function CustomerOrderPage() {
