@@ -173,7 +173,10 @@ export default function CustomerOrderPage() {
           </div>
           <h1 className="font-bold text-primary">โต๊ะ {table.number} • โซน {table.zone}</h1>
         </div>
+        <div className="flex items-center gap-2">
+        <SoundToggle compact />
         <Sheet>
+
           <SheetTrigger asChild>
             <Button className="relative">
               <ShoppingCart className="h-4 w-4 mr-2" /> ตะกร้า
