@@ -61,16 +61,24 @@ export default function ReservationsPage() {
     load();
     const channel = supabase
       .channel("reservation-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => load())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reservations" }, () => {
+        toast.info("มีการจองโต๊ะใหม่เข้ามา 📅");
+        playSound("newReservation");
+        load();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reservations" }, () => load())
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "reservations" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "reservation_items" }, () => load())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "payment_slips" }, () => {
         toast.info("มีสลิปแจ้งโอนเข้ามาใหม่ 💸");
+        playSound("slip");
         load();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "payment_slips" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
+
 
   /** เลือกโต๊ะอัตโนมัติตามโซน/จำนวนคนที่ลูกค้าเลือก */
   const pickTable = (row: Reservation) => {
