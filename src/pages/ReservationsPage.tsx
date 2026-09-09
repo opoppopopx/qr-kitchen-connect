@@ -218,7 +218,12 @@ export default function ReservationsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">การจองโต๊ะ</h2>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h2 className="text-2xl font-bold">การจองโต๊ะ</h2>
+        <SoundToggle />
+      </div>
+
+
 
       <Card>
         <CardHeader>
