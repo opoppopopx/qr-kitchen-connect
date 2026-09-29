@@ -1,0 +1,1 @@
+GRANT USAGE, SELECT ON SEQUENCE public.orders_order_no_seq TO anon, authenticated, service_role;
